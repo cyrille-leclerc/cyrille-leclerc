@@ -8,17 +8,10 @@
    <packaging>war</packaging>
    <version>0.2-SNAPSHOT</version>
    <scm>
-      <connection>scm:svn:http://localhost/svn/repos/cyrille/trunk/</connection>
+      <connection>scm:git:git://github.com/cyrille-leclerc/cyrille-leclerc.git</connection>
+      <developerConnection>scm:git:git@github.com:cyrille-leclerc/cyrille-leclerc.git</developerConnection>
+      <url>https://github.com/cyrille-leclerc/cyrille-leclerc</url>
    </scm>
-   <distributionManagement>
-      <repository>
-         <name>My main repository</name>
-         <id>my-main-repository</id>
-         <uniqueVersion>true</uniqueVersion>
-         <url>file:///D:/var/maven2/</url>
-         <layout>default</layout>
-      </repository>
-   </distributionManagement>
    <licenses>
       <license>
          <name>Apache 2</name>
