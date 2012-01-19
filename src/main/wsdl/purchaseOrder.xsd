@@ -1,0 +1,49 @@
+<schema attributeFormDefault="qualified" elementFormDefault="qualified"
+	targetNamespace="http://cyrille/ws/sample/purchaseorder"
+	xmlns:pons="http://cyrille/ws/sample/purchaseorder"
+	xmlns="http://www.w3.org/2001/XMLSchema">
+	<complexType name="purchaseOrder">
+		<sequence>
+			<element name="uid" type="long" nillable="true" />
+			<element name="date" type="dateTime" />
+			<element name="supplier" type="pons:partner" />
+			<element name="buyer" type="pons:partner" />
+
+			<element name="items">
+				<complexType>
+					<sequence>
+						<element name="item" type="pons:item"
+							maxOccurs="unbounded" />
+					</sequence>
+				</complexType>
+			</element>
+			<element name="comment" type="string" />
+		</sequence>
+	</complexType>
+
+	<complexType name="partner">
+		<sequence>
+			<element name="uid" type="string" />
+			<element name="name" type="string" />
+			<element name="address" type="pons:address" />
+		</sequence>
+	</complexType>
+	<complexType name="address">
+		<sequence>
+			<element name="street" type="string" />
+			<element name="city" type="string" />
+			<element name="zip" type="string" />
+			<element name="state" type="string" />
+		</sequence>
+	</complexType>
+
+	<complexType name="item">
+		<sequence>
+			<element name="uid" type="string" />
+			<element name="name" type="string" />
+			<element name="price" type="double" />
+			<element name="quantity" type="integer" />
+		</sequence>
+	</complexType>
+
+</schema>

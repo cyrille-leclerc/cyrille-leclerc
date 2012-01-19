@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+	<bean id="connectionFactory" class="com.ibm.mq.jms.MQConnectionFactory">
+		<property name="hostName" value="localhost" />
+		<property name="port" value="1414" />
+		<property name="queueManager" value="default" />
+	</bean>
+
+	<bean id="checkingAccountService" class="org.springframework.jms.remoting.JmsInvokerServiceExporter">
+		<property name="serviceInterface" value="cyrille.jms.sample.CheckingAccountService" />
+		<property name="service">
+			<bean class="cyrille.jms.sample.server.SimpleCheckingAccountService" />
+		</property>
+	</bean>
+
+	<bean class="org.springframework.jms.listener.SimpleMessageListenerContainer">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="destinationName" value="default" />
+		<property name="concurrentConsumers" value="3" />
+		<property name="messageListener" ref="checkingAccountService" />
+	</bean>
+
+</beans>

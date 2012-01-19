@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:tns="http://cyrille/ws/sample/springframework/purchaseorder/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	name="purchaseOrderService"
+	targetNamespace="http://cyrille/ws/sample/springframework/purchaseorder/"
+	xmlns:pons="http://cyrille/xml/sample/purchaseorder">
+
+	<wsdl:types>
+
+		<xsd:schema
+			targetNamespace="http://cyrille/xml/sample/purchaseorder">
+			<xsd:include schemaLocation="../xsd/purchaseOrder.xsd" />
+		</xsd:schema>
+		<xsd:schema xmlns:pons="http://cyrille/xml/sample/purchaseorder"
+			targetNamespace="http://cyrille/ws/sample/springframework/purchaseorder/">
+			<xsd:element name="orderResponse" type="xsd:string" />
+			<xsd:element name="orderRequest" type="pons:purchaseOrder" />
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="orderResponse">
+		<wsdl:part name="orderResponse" element="tns:orderResponse" />
+	</wsdl:message>
+	<wsdl:message name="orderRequest">
+		<wsdl:part name="orderRequest" element="tns:orderRequest" />
+	</wsdl:message>
+	<wsdl:portType name="purchaseOrderService">
+		<wsdl:operation name="order">
+			<wsdl:input message="tns:orderRequest" />
+			<wsdl:output message="tns:orderResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="purchaseOrderServiceSOAP"
+		type="tns:purchaseOrderService">
+		<soap:binding style="document"
+			transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="order">
+			<soap:operation
+				soapAction="http://cyrille/ws/sample/springframework/purchaseorder/order" />
+			<wsdl:input>
+				<soap:body parts="orderRequest" use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body parts="orderResponse" use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="purchaseOrder">
+		<wsdl:port binding="tns:purchaseOrderServiceSOAP"
+			name="purchaseOrderServiceSOAP">
+			<soap:address location="http://www.example.org/" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+   xmlns:context="http://www.springframework.org/schema/context"
+   xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd 
+       ">
+   <bean id="java5AnnotedJmxTestServiceImpl" class="cyrille.springframework.jmx.Java5AnnotedJmxTestServiceImpl" />
+
+   <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean" />
+
+   <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+      <property name="autodetect" value="true" />
+      <property name="server" ref="mbeanServer" />
+      <property name="namingStrategy">
+         <bean class="org.springframework.jmx.export.naming.IdentityNamingStrategy" />
+      </property>
+      <property name="beans">
+         <map>
+            <entry key="system:name=java5AnnotedJmxTestServiceImpl" value-ref="java5AnnotedJmxTestServiceImpl" />
+         </map>
+      </property>
+   </bean>
+</beans>

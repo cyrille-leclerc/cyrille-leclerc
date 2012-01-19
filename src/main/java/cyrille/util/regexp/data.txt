@@ -1,0 +1,1434 @@
+package com.vuitton.symphonie.businessact.humanresourcesentries;
+//TODO Plo: JavaDoc MUST be written !
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+
+import org.apache.commons.lang.builder.CompareToBuilder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.vuitton.VuittonException;
+import com.vuitton.common.application.Parameters;
+import com.vuitton.common.application.User;
+import com.vuitton.common.application.Warning;
+import com.vuitton.common.businessact.BusinessActImpl;
+import com.vuitton.common.businesscomponent.Bo;
+import com.vuitton.common.businesscomponent.BoKey;
+import com.vuitton.common.businesscomponent.BosCollection;
+import com.vuitton.common.businesscomponent.FindParameters;
+import com.vuitton.common.businesscomponent.PersistenceManager;
+import com.vuitton.common.businesscomponent.SqlDao;
+import com.vuitton.common.nls.Messages;
+import com.vuitton.common.util.ConfigurationUtil;
+import com.vuitton.common.util.FormatUtil;
+import com.vuitton.common.util.JdbcUtil;
+import com.vuitton.symphonie.businesscomponent.employee.Employee;
+import com.vuitton.symphonie.businesscomponent.employee.EmployeeSqlDao;
+import com.vuitton.symphonie.businesscomponent.employee.WorkDay;
+import com.vuitton.symphonie.businesscomponent.employee.WorkDaySqlDao;
+import com.vuitton.symphonie.businesscomponent.security.SymphonieUser;
+import com.vuitton.symphonie.businesscomponent.timeentry.TimeEntry;
+import com.vuitton.symphonie.businesscomponent.timeentry.TimeEntrySqlDao;
+import com.vuitton.symphonie.util.SymphonieUtil;
+
+/**
+ * @author LOPEP
+ */
+public class HumanResourcesEntriesManagement extends BusinessActImpl {
+
+	private final static Log logger = LogFactory.getLog(HumanResourcesEntriesManagement.class);
+
+	private final static int ROLLING_WORK_DAYS_MONTHS_IN_ADVANCE = Integer.parseInt((String) ConfigurationUtil.getProperty("work-day/rolling_work_day_months_in_advance"));
+
+	private List includedEmployeesCache = null;
+	private List excludedEmployeesCache = null;
+	private Map employeesSearchCriterions = null;
+
+	private Map searchCriterions = null;
+
+	private final static int MAX_SQL_QUERIES_PER_BATCH = 500;
+
+	public final static String ROLE = "human-resources-entries";
+
+	/**
+	 * @deprecated
+	 */
+	private List shopFloors = null;
+
+	private List teamLeaders = null;
+
+	private final static int NUMBER_OF_WEEKS_IN_YEAR = 52;
+
+	private final static String _BeginTimeAm = "_BeginTimeAm";
+	private final static String _EndTimeAm = "_EndTimeAm";
+	private final static String _BeginTimePm = "_BeginTimePm";
+	private final static String _EndTimePm = "_EndTimePm";
+
+	public final static String MODIFICATION_SEARCH = "MODIFICATION_SEARCH";
+	public final static String DISPLAY_SEARCH = "DISPLAY_SEARCH";
+
+	public final static String SEARCHED_YEAR = "SEARCHED_YEAR";
+	public final static String FIRST_WEEK_NUMBER = "FIRST_WEEK_NUMBER";
+	public final static String NUMBER_OF_WEEKS = "NUMBER_OF_WEEKS";
+
+	protected final static String DISPLAY_EMPLOYEES_SEARCH_CRITERIONS_JSP = "/humanresourcesentries/displayEmployeesSearchCriterions_";
+	protected final static String UPDATE_EMPLOYEES_LIST_JSP = "/humanresourcesentries/updateEmployeesList_";
+	protected final static String UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_JSP = "/humanresourcesentries/modifyGroupedCalendar_";
+	protected final static String CHOOSE_EMPLOYEE_FROM_LIST_JSP = "/humanresourcesentries/chooseEmployeeFromList_";
+	protected final static String DISPLAY_WORK_DAYS_FOR_ONE_EMPLOYEE_JSP = "/humanresourcesentries/displaySingleCalendar_";
+	protected final static String DISPLAY_NOT_UPDATED_WORK_DAYS_JSP = "/humanresourcesentries/updateErrorsList_";
+
+	public final static String DISPLAY_EMPLOYEES_SEARCH_CRITERIONS = "DISPLAY_EMPLOYEES_SEARCH_CRITERIONS";
+	public final static String UPDATE_EMPLOYEES_LIST = "UPDATE_EMPLOYEES_LIST";
+	public final static String DISPLAY_WORK_DAYS_UPDATE = "DISPLAY_WORK_DAYS_UPDATE";
+	public final static String FIND_EMPLOYEES = "FIND_EMPLOYEES";
+	public final static String COPY_WORK_DAYS_FROM_EMPLOYEE = "COPY_WORK_DAYS_FROM_EMPLOYEE";
+	public final static String COPY_WORK_DAYS_FROM_EMPLOYEE_CONFIRMATION = "COPY_WORK_DAYS_FROM_EMPLOYEE_CONFIRMATION";
+	public final static String UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST = "UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST";
+	public final static String DISPLAY_WORK_DAYS_FOR_ONE_EMPLOYEE = "DISPLAY_WORK_DAYS_FOR_ONE_EMPLOYEE";
+	public final static String UPDATE_WORK_DAYS_FOR_ONE_EMPLOYEE = "UPDATE_WORK_DAYS_FOR_ONE_EMPLOYEE";
+	public final static String CONFIRM_WORK_DAYS_UPDATE = "CONFIRM_WORK_DAYS_UPDATE";
+	public final static String DISPLAY_EMPLOYEES_LIST_UPDATE_SCREEN = "DISPLAY_EMPLOYEES_LIST_UPDATE_SCREEN";
+	public final static String ROLL_BACK_WORK_DAYS_UPDATE = "ROLL_BACK_WORK_DAYS_UPDATE";
+	public final static String UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_CONFIRMATION = "UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_CONFIRMATION";
+
+	private static final int beginTimeAmIdx = 0;
+	private static final int endTimeAmIdx = 1;
+	private static final int beginTimePmIdx = 2;
+	private static final int endTimePmIdx = 3;
+
+	private static final int amToUpdate = 0;
+	private static final int pmToUpdate = 1;
+
+	private static final int nbOfDaysInOneWeek = 7;
+	private static final int nbOfPeriodToUpdateInOneDay = 2; //Am, Pm
+	private static final int nbOfHoursToSet = 4; // beginAm, EndAm, BeginPm, EndPm
+
+	private static final String _AmUpdate = "_AmUpdate";
+	private static final String _PmUpdate = "_PmUpdate";
+
+	private String loadTimeEntries = new String();
+	private Set employeesWhomHaveTimeEntriesToUpdate = new HashSet();
+	private Set datesAtWhichThereAreTimeEntriesToUpdate = new HashSet();
+	private Set timeEntriesToUpdate = new HashSet();
+
+	/* (non-Javadoc)
+	 * @see com.vuitton.common.businessact.BusinessAct#executeStep(java.util.Map)
+	 */
+	public void executeStep(Map params) throws VuittonException {
+		params.put("actor", ((SymphonieUser) getUserSession().getUser()).getEmployee());
+		String businessActStep = (String) params.get(Parameters.BUSINESS_ACT_STEP);
+		if (businessActStep.equals(DISPLAY_EMPLOYEES_SEARCH_CRITERIONS)) {
+			displayEmployeesSearchCriterions(params);
+		} else if (businessActStep.equals(FIND_EMPLOYEES)) {
+			findEmployeesByCriterions(params);
+		} else if (businessActStep.equals(COPY_WORK_DAYS_FROM_EMPLOYEE)) {
+			//copyWorkDaysFromEmployee(params);
+			displayCopyWorkDaysFromEmployeeConfirmationScreen(params);
+		} else if (businessActStep.equals(COPY_WORK_DAYS_FROM_EMPLOYEE_CONFIRMATION)) {
+			copyWorkDaysFromEmployee(params);
+		} else if (businessActStep.equals(UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST)) {
+			//updateWorkDaysForAnEmployeesList(params);
+			displayUpdateWorkDaysForEmployeesListConfirmationScreen(params);
+		} else if (businessActStep.equals(UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_CONFIRMATION)) {
+			updateWorkDaysForAnEmployeesList(params);
+		} else if (businessActStep.equals(UPDATE_WORK_DAYS_FOR_ONE_EMPLOYEE)) {
+			updateWorkDaysForOneEmployee(params);
+		} else if (businessActStep.equals(CONFIRM_WORK_DAYS_UPDATE)) {
+			confirmWorkDaysUpdate(params);
+		} else if (businessActStep.equals(DISPLAY_WORK_DAYS_UPDATE)) {
+			displayWorkDaysUpdateScreenForAnEmployeesList(params);
+		} else if (businessActStep.equals(UPDATE_EMPLOYEES_LIST)) {
+			updateEmployeesList(params);
+		} else if (businessActStep.equals(DISPLAY_WORK_DAYS_FOR_ONE_EMPLOYEE)) {
+			displayWorkDaysForOneEmployee(params);
+		} else if (businessActStep.equals(DISPLAY_EMPLOYEES_LIST_UPDATE_SCREEN)) {
+			displayEmployeesListUpdateScreen(params);
+		} else if (businessActStep.equals(ROLL_BACK_WORK_DAYS_UPDATE)) {
+			rollBackWorkDaysUpdate(params);
+		} else {
+			throw new VuittonException("unknown business act step : " + businessActStep);
+		}
+	}
+
+	/**
+	 * 
+	 */
+	private void rollBackWorkDaysUpdate(Map params) throws VuittonException {
+		getUserSession().getPersistenceManager().cancelModifications();
+
+		String searchType = (String) params.get("searchType");
+		if (searchType.equals(MODIFICATION_SEARCH)) {
+			displayWorkDaysUpdateScreenForAnEmployeesList(params);
+		} else if (searchType.equals(DISPLAY_SEARCH)) {
+			displayWorkDaysForOneEmployee(params);
+		}
+	}
+
+	/**
+	* @param params
+	* @throws VuittonException
+	*/
+	private void updateEmployeesList(Map params) throws VuittonException {
+		Object includedEmployeesUidObject = params.get("includedEmployees");
+		String[] includedEmployeesUid = null;
+		if (includedEmployeesUidObject instanceof String) {
+			String includedEmployeeUid = (String) includedEmployeesUidObject;
+			includedEmployeesUid = new String[] { includedEmployeeUid };
+		} else if (includedEmployeesUidObject instanceof String[]) {
+			includedEmployeesUid = (String[]) includedEmployeesUidObject;
+		} else {
+			// FALSE ! Case list is empty throw new VuittonException("Unexpected type from http request");
+		}
+		List includedEmployeesList = new ArrayList();
+		if (includedEmployeesUid != null) {
+			for (int i = 0; i < includedEmployeesUid.length; i++) {
+				includedEmployeesList.add(includedEmployeesUid[i]);
+			}
+		}
+
+		Object excludedEmployeesUidObject = params.get("excludedEmployees");
+		String[] excludedEmployeesUid = null;
+		if (excludedEmployeesUidObject instanceof String) {
+			String excludedEmployeeUid = (String) excludedEmployeesUidObject;
+			excludedEmployeesUid = new String[] { excludedEmployeeUid };
+		} else if (excludedEmployeesUidObject instanceof String[]) {
+			excludedEmployeesUid = (String[]) excludedEmployeesUidObject;
+		} else {
+			// FALSE ! Case list is empty throw new VuittonException("Unexpected type from http request");
+		}
+
+		List excludedEmployeesList = new ArrayList();
+		if (excludedEmployeesUid != null) {
+			for (int i = 0; i < excludedEmployeesUid.length; i++) {
+				excludedEmployeesList.add(excludedEmployeesUid[i]);
+			}
+		}
+		Iterator includedEmployeesIterator = includedEmployeesCache.listIterator();
+		while (includedEmployeesIterator.hasNext()) {
+			Employee employee = (Employee) includedEmployeesIterator.next();
+			if (!includedEmployeesList.contains(String.valueOf(employee.getBoUid()))) {
+				includedEmployeesIterator.remove();
+				excludedEmployeesCache.add(employee);
+			}
+		}
+		/*cannot compare BoUid and Object !
+		if(!excludedEmployeesList.containsAll(excludedEmployeesCache)) {
+			throw new VuittonException("Lists are not correctly linked");
+		}*/
+		displayWorkDaysUpdateScreenForAnEmployeesList(params);
+	}
+
+	/**
+	 * @param params
+	 * @throws VuittonException
+	 */
+	private void displayWorkDaysUpdateScreenForAnEmployeesList(Map params) throws VuittonException {
+		params.put("readOnly", Boolean.FALSE);
+		params.put("userSession", getUserSession());
+		params.put("includedEmployees", includedEmployeesCache);
+		params.put("updateValues", new HashMap());
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_JSP));
+	}
+	/**
+	 */
+	private void displayEmployeesSearchCriterions(Map params) throws VuittonException {
+
+		if (params.get("searchType") != null) {
+			params.put("searchType", params.get("searchType"));
+		} else {
+			params.put("searchType", MODIFICATION_SEARCH);
+		}
+
+		params.put("teamLeaders", teamLeaders);
+		params.put("categoryHours", Employee.getCategoryHoursList(getUserSession().getUser().getPreferences().getLocale()));
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(DISPLAY_EMPLOYEES_SEARCH_CRITERIONS_JSP));
+	}
+
+	/**
+	 * Perform a time entry query with given parameters
+	 * All parameters are optional
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> searchType</td><td></td></tr>
+	 * <tr><td> employeeCode</td><td></td></tr>
+	 * <tr><td> employeeName</td><td></td></tr>
+	 * <tr><td> teamLeaderUid</td><td></td></tr>
+	 * <tr><td> dateOfAttendance</td><td></td></tr>
+	 * <tr><td colspan='2'>ONLY FOR MODIFICATION USE CASE</td></tr>
+	 * <tr><td> shopFloorUid</td><td></td></tr>
+	 * <tr><td> categoryHoursUid</td><td></td></tr>
+	 * <tr><td colspan='2'>ONLY FOR DISPLAY USE CASE</td></tr>
+	 * <tr><td> searchedYear</td><td></td></tr>
+	 * <tr><td> firstWeekNumber</td><td></td></tr>
+	 * <tr><td> numberOfWeeks</td><td></td>	</tr>
+	 * </table>  
+	 * @param params Map the parameters Map
+	 * @exception VuittonException
+	 */
+	public void findEmployeesByCriterions(Map params) throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+		List warnings = (List) params.get(Parameters.WARNINGS);
+		int warningsBeforeQuery = warnings.size();
+
+		// 1 fill Find parameters :
+		FindParameters findParameters = new FindParameters(Employee.class, EmployeeSqlDao.FIND_BY_CRITERIONS);
+
+		Map criterions = findParameters.getCriterions();
+		// N° expedition
+		if (!params.get("employeeCode").equals("")) {
+			criterions.put(EmployeeSqlDao.FIND_PARAM_CODE, FormatUtil.quote((String) params.get("employeeCode")));
+		}
+		if (!params.get("employeeName").equals("")) {
+			criterions.put(EmployeeSqlDao.FIND_PARAM_NAME, FormatUtil.quote((String) params.get("employeeName")));
+		}
+		if (!params.get("teamLeaderUid").equals("")) {
+			Employee teamLeader = (Employee) persistenceManager.findBo(Employee.class, Long.parseLong((String) params.get("teamLeaderUid")));
+			criterions.put(EmployeeSqlDao.FIND_PARAM_TEAM_LEADER_UID, (String) params.get("teamLeaderUid"));
+			criterions.put(EmployeeSqlDao.FIND_PARAM_TEAM_LEADER_SUBORDINATES, teamLeader.getSubordinates());
+		}
+		if (!params.get("dateOfAttendance").equals("")) {
+			Date dateOfAttendance = parseDate(params.get("dateOfAttendance"), true, null, null, warnings, "dateOfAttendance", null);
+			criterions.put(EmployeeSqlDao.FIND_PARAM_DATE_OF_ATTENDANCE, dateOfAttendance);
+		}
+
+		if (warnings.size() != 0) {
+			displayEmployeesSearchCriterions(params);
+			return;
+		}
+
+		FindParameters includedParameters = new FindParameters(Employee.class, EmployeeSqlDao.FIND_BY_CRITERIONS);
+		includedParameters.getCriterions().putAll(criterions);
+		FindParameters excludedParameters = null;
+
+		String searchType = (String) params.get("searchType");
+		if (searchType.equals(MODIFICATION_SEARCH)) {
+			if (Integer.parseInt((String) params.get("categoryHoursUid")) == Employee.ALL_CATEGORY_HOURS) {
+				criterions.put(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Messages.getString(getUserSession(), "allTimeCategoryHours"));
+				includedParameters.addCriterion(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Employee.FULL_TIME_CATEGORY_HOURS_STRING_FOR_DB);
+
+				excludedParameters = new FindParameters(Employee.class, EmployeeSqlDao.FIND_BY_CRITERIONS);
+				excludedParameters.getCriterions().putAll(criterions);
+
+				excludedParameters.addCriterion(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Employee.PART_TIME_CATEGORY_HOURS_STRING_FOR_DB);
+			} else if (Integer.parseInt((String) params.get("categoryHoursUid")) == Employee.CATEGORY_HOURS_FULL_TIME) {
+				criterions.put(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Messages.getString(getUserSession(), "fullTimeCategoryHours"));
+				includedParameters.addCriterion(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Employee.FULL_TIME_CATEGORY_HOURS_STRING_FOR_DB);
+			} else if (Integer.parseInt((String) params.get("categoryHoursUid")) == Employee.CATEGORY_HOURS_PART_TIME) {
+				criterions.put(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Messages.getString(getUserSession(), "partTimeCategoryHours"));
+				includedParameters.addCriterion(EmployeeSqlDao.FIND_PARAM_HOURS_CATEGORY, Employee.PART_TIME_CATEGORY_HOURS_STRING_FOR_DB);
+			}
+			employeesSearchCriterions = criterions;
+		} else if (searchType.equals(DISPLAY_SEARCH)) {
+			// Following criterions has to be stored in order to use them later
+			// they are related to WorkDay, not to Employee
+			employeesSearchCriterions = criterions;
+
+			Calendar temporaryCalendar = getCalendar();
+			temporaryCalendar.setTime(new Date());
+			temporaryCalendar.add(Calendar.MONTH, ROLLING_WORK_DAYS_MONTHS_IN_ADVANCE);
+
+			int searchedYear = parseInt((String) params.get("searchedYear"), true, 0, temporaryCalendar.get(Calendar.YEAR), warnings, "searchedYear", 0);
+			int firstWeekNumber = parseInt((String) params.get("firstWeekNumber"), true, 0, 53, warnings, "firstWeekNumber", temporaryCalendar.get(Calendar.YEAR));
+			int weekLimit = temporaryCalendar.get(Calendar.WEEK_OF_YEAR) - firstWeekNumber;
+
+			if (temporaryCalendar.get(Calendar.YEAR) != searchedYear) {
+				weekLimit += NUMBER_OF_WEEKS_IN_YEAR;
+			}
+			int numberOfWeeks = parseInt((String) params.get("numberOfWeeks"), true, 0, weekLimit, warnings, "numberOfWeeks", 0);
+
+			employeesSearchCriterions.put(SEARCHED_YEAR, FormatUtil.quote((String) params.get("searchedYear")));
+			employeesSearchCriterions.put(FIRST_WEEK_NUMBER, FormatUtil.quote((String) params.get("firstWeekNumber")));
+			employeesSearchCriterions.put(NUMBER_OF_WEEKS, FormatUtil.quote((String) params.get("numberOfWeeks")));
+
+			Calendar fromCalendar = SymphonieUtil.getFirstDayOfWeek(searchedYear, firstWeekNumber);
+			employeesSearchCriterions.put(WorkDaySqlDao.FIND_PARAM_BETWEEN_BEGIN_DATE, fromCalendar.getTime());
+
+			Calendar toCalendar = (Calendar) fromCalendar.clone();
+			toCalendar.add(Calendar.WEEK_OF_YEAR, numberOfWeeks);
+			toCalendar.add(Calendar.DAY_OF_YEAR, -1);
+			employeesSearchCriterions.put(WorkDaySqlDao.FIND_PARAM_BETWEEN_END_DATE, toCalendar.getTime());
+		}
+
+		if (warnings.size() == warningsBeforeQuery) {
+			includedEmployeesCache = persistenceManager.findBos(includedParameters);
+
+			if (includedEmployeesCache.size() == 0) {
+				warnings.add(new Warning(getUserSession(), "noResultFound"));
+				displayEmployeesSearchCriterions(params);
+				return;
+			}
+
+			if (excludedParameters != null) {
+				excludedEmployeesCache = persistenceManager.findBos(excludedParameters);
+			} else {
+				excludedEmployeesCache = new ArrayList();
+			}
+
+			params.put("criterions", employeesSearchCriterions);
+			params.put("userSession", getUserSession());
+			params.put("includedEmployees", includedEmployeesCache);
+			params.put("excludedEmployees", excludedEmployeesCache);
+			params.put("teamLeaders", teamLeaders);
+
+			if (searchType.equals(MODIFICATION_SEARCH)) {
+				params.put(Parameters.FORWARD_PAGE, getNlsPath(UPDATE_EMPLOYEES_LIST_JSP));
+			} else if (searchType.equals(DISPLAY_SEARCH)) {
+				searchCriterions = criterions;
+				params.put(Parameters.FORWARD_PAGE, getNlsPath(CHOOSE_EMPLOYEE_FROM_LIST_JSP));
+			}
+		} else {
+			displayEmployeesSearchCriterions(params);
+		}
+
+	}
+
+	/**
+	 * display function
+	 */
+	private void displayEmployeesListUpdateScreen(Map params) throws VuittonException {
+		params.put("criterions", employeesSearchCriterions);
+		params.put("userSession", getUserSession());
+		params.put("includedEmployees", includedEmployeesCache);
+		params.put("excludedEmployees", excludedEmployeesCache);
+		params.put("teamLeaders", teamLeaders);
+
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(UPDATE_EMPLOYEES_LIST_JSP));
+	}
+
+	/**
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> fromYear></td>
+	 * <tr><td> fromWeek</td><td></td>
+	 * <tr><td> toYear</td><td></td>
+	 * <tr><td> toWeek</td><td></td>
+	 * <tr><td> sourceEmployeeUid</td><td></td>
+	 * </table>  
+	 * @param params
+	 */
+	private void copyWorkDaysFromEmployee(Map params) throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		int warningsBeforeUpdate = warnings.size();
+
+		Map updateValues = new HashMap();
+
+		Calendar temporaryCalendar = getCalendar();
+		temporaryCalendar.setTime(new Date());
+		temporaryCalendar.add(Calendar.MONTH, ROLLING_WORK_DAYS_MONTHS_IN_ADVANCE);
+
+		validateYearsAndWeeksEntries(params, warnings, updateValues);
+
+		long sourceEmployeeUid = Long.parseLong((String) params.get("employeeUid"));
+		updateValues.put("sourceEmployeeUid", String.valueOf(sourceEmployeeUid));
+
+		Employee sourceEmployee = (Employee) persistenceManager.findBo(Employee.class, sourceEmployeeUid);
+
+		List updateErrors = new ArrayList();
+
+		if (warnings.size() == warningsBeforeUpdate) {
+			int fromYear = Integer.parseInt((String) updateValues.get("fromYear"));
+			int fromWeek = Integer.parseInt((String) updateValues.get("fromWeek"));
+			int toYear = Integer.parseInt((String) updateValues.get("toYear"));
+			int toWeek = Integer.parseInt((String) updateValues.get("toWeek"));
+
+			Calendar fromCalendar = SymphonieUtil.getFirstDayOfWeek(fromYear, fromWeek);
+			Calendar toCalendar = SymphonieUtil.getLastDayOfWeek(toYear, toWeek);
+
+			//Map sourceWorkDays = new HashMap();
+			// Load source WorkDays
+			FindParameters findParameters = new FindParameters(WorkDay.class, WorkDaySqlDao.FIND_BY_EMPLOYEE_BETWEEN_DATES);
+			findParameters.addCriterion(WorkDaySqlDao.FIND_PARAM_EMPLOYEE_UID, sourceEmployeeUid);
+			findParameters.addCriterion(WorkDaySqlDao.FIND_PARAM_BETWEEN_BEGIN_DATE, fromCalendar.getTime());
+			findParameters.addCriterion(WorkDaySqlDao.FIND_PARAM_BETWEEN_END_DATE, toCalendar.getTime());
+			List sourceWorkDays = persistenceManager.findBos(findParameters);
+
+			int sqlQueriesCounter = 0;
+
+			Statement statement = null;
+			persistenceManager.getTransactionManager().begin();
+			Connection connection = null;
+			try {
+				connection = persistenceManager.getTransactionManager().getConnection();
+				statement = connection.createStatement();
+				Map statementDescriptors = new HashMap();
+
+				Iterator itWorkDays = sourceWorkDays.iterator();
+				while (itWorkDays.hasNext()) {
+					WorkDay sourceWorkDay = (WorkDay) itWorkDays.next();
+
+					Iterator itEmployee = includedEmployeesCache.iterator();
+					if (sourceWorkDay != null) {
+						while (itEmployee.hasNext()) {
+							Employee employee = (Employee) itEmployee.next();
+							if (sourceWorkDay.getBeginTimeAm() == null && sourceWorkDay.getEndTimeAm() == null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_AM, sourceWorkDay.getDate(), employee, PERIOD_NULL_TIME_AM, statementDescriptors);
+							} else if (sourceWorkDay.getBeginTimeAm() != null && sourceWorkDay.getEndTimeAm() != null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_AM_MILESTONE, sourceWorkDay.getDate(), employee, sourceWorkDay.getBeginTimeAm(), PERIOD_BEGIN_TIME_AM, statementDescriptors);
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_AM_MILESTONE, sourceWorkDay.getDate(), employee, sourceWorkDay.getEndTimeAm(), PERIOD_END_TIME_AM, statementDescriptors);
+							}
+							if (sourceWorkDay.getBeginTimePm() == null && sourceWorkDay.getEndTimePm() == null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_PM, sourceWorkDay.getDate(), employee, PERIOD_NULL_TIME_PM, statementDescriptors);
+							} else if (sourceWorkDay.getBeginTimePm() != null && sourceWorkDay.getEndTimePm() != null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_PM_MILESTONE, sourceWorkDay.getDate(), employee, sourceWorkDay.getBeginTimePm(), PERIOD_BEGIN_TIME_PM, statementDescriptors);
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_PM_MILESTONE, sourceWorkDay.getDate(), employee, sourceWorkDay.getEndTimePm(), PERIOD_END_TIME_PM, statementDescriptors);
+							}
+						}
+					}
+					if (sqlQueriesCounter > MAX_SQL_QUERIES_PER_BATCH) {
+						executeStatementsAndFillWarnings(statement, statementDescriptors, null, updateErrors, sqlQueriesCounter);
+						sqlQueriesCounter = 0;
+						statementDescriptors = new HashMap();
+					}
+				}
+				executeStatementsAndFillWarnings(statement, statementDescriptors, null, updateErrors, sqlQueriesCounter);
+
+				statementDescriptors = new HashMap();
+
+				persistenceManager.getTransactionManager().freeConnection(connection);
+				persistenceManager.getTransactionManager().commit();
+			} catch (VuittonException ve) {
+				persistenceManager.getTransactionManager().rollback();
+				throw ve;
+			} catch (SQLException sqle) {
+				persistenceManager.getTransactionManager().rollback();
+				throw new VuittonException(sqle);
+			} catch (RuntimeException re) {
+				//catch RuntimeException to rollback
+				persistenceManager.getTransactionManager().rollback();
+				throw re;
+			} finally {
+				JdbcUtil.closeStatement(statement);
+				persistenceManager.getTransactionManager().freeConnection(connection);
+				persistenceManager.refresh(true);
+			}
+
+			updateTimeEntries();
+
+			params.put("errors", updateErrors);
+			params.put(Parameters.FORWARD_PAGE, getNlsPath(DISPLAY_NOT_UPDATED_WORK_DAYS_JSP));
+		} else {
+			// Sould never append
+			throw new VuittonException("Entries should have been already checked");
+			//displayWorkDaysUpdateScreenForAnEmployeesList(params);
+		}
+	}
+
+	private void displayCopyWorkDaysFromEmployeeConfirmationScreen(Map params) throws VuittonException {
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		int warningsBeforeUpdate = warnings.size();
+
+		Map updateValues = new HashMap();
+
+		validateYearsAndWeeksEntries(params, warnings, updateValues);
+
+		long sourceEmployeeUid = Long.parseLong((String) params.get("sourceEmployeeUid"));
+		updateValues.put("sourceEmployeeUid", String.valueOf(sourceEmployeeUid));
+
+		if (warnings.size() == warningsBeforeUpdate) {
+			params.put("readOnly", Boolean.TRUE);
+		} else {
+			params.put("readOnly", Boolean.FALSE);
+		}
+		params.put("sourceEmployee", "checked");
+		params.put("includedEmployees", includedEmployeesCache);
+		params.put("updateValues", updateValues);
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_JSP));
+	}
+
+	/**
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> fromYear></td></tr>
+	 * <tr><td> fromWeek</td><td></td></tr>
+	 * <tr><td> toYear</td><td></td></tr>
+	 * <tr><td> toWeek</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.MONDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.TUESDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.WEDNESDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.THURSDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.FRIDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.SATURDAY_EndTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_AmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_PmUpdate</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_BeginTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_EndTimeAm</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_BeginTimePm</td><td></td></tr>
+	 * <tr><td> Calendar.SUNDAY_EndTimePm</td><td></td></tr>
+	 * </table>  
+	 * @param params
+	 */
+	private void updateWorkDaysForAnEmployeesList(Map params) throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		int warningsBeforeUpdate = warnings.size();
+
+		Map updateValues = new HashMap();
+
+		Date[][] weekTimes = new Date[nbOfDaysInOneWeek + 1][nbOfHoursToSet];
+		// NOTE : nbOfDaysInOneWeek + 1 : one day is added to fit to Calendar going from [1] to [7]
+		boolean[][] isDayToUpdate = new boolean[nbOfDaysInOneWeek + 1][nbOfPeriodToUpdateInOneDay];
+
+		buildWorkDayUpdateArray(params, warnings, updateValues, weekTimes, isDayToUpdate);
+		validateYearsAndWeeksEntries(params, warnings, updateValues);
+
+		if (warnings.size() == warningsBeforeUpdate) {
+			List updateErrors = new ArrayList();
+			int fromYear = Integer.parseInt((String) updateValues.get("fromYear"));
+			int fromWeek = Integer.parseInt((String) updateValues.get("fromWeek"));
+			int toYear = Integer.parseInt((String) updateValues.get("toYear"));
+			int toWeek = Integer.parseInt((String) updateValues.get("toWeek"));
+
+			Calendar fromCalendar = SymphonieUtil.getFirstDayOfWeek(fromYear, fromWeek);
+			Calendar calendar = (Calendar) fromCalendar.clone();
+
+			//Exclusive MAX bound
+			Calendar toCalendar = SymphonieUtil.getLastDayOfWeek(toYear, toWeek);
+			toCalendar.add(Calendar.DAY_OF_YEAR, 1);
+			Date dayMax = toCalendar.getTime();
+
+			Connection connection = null;
+			Statement statement = null;
+			Map statementDescriptors = new HashMap();
+			int sqlQueriesCounter = 0;
+			try {
+				persistenceManager.getTransactionManager().begin();
+				connection = persistenceManager.getTransactionManager().getConnection();
+				statement = connection.createStatement();
+
+				while (calendar.getTime().before(dayMax)) {
+					Iterator itEmployee = includedEmployeesCache.iterator();
+					while (itEmployee.hasNext()) {
+						Employee employee = (Employee) itEmployee.next();
+						if (isDayToUpdate[calendar.get(Calendar.DAY_OF_WEEK)][amToUpdate]) {
+							if (weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimeAmIdx] == null && weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimeAmIdx] == null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_AM, calendar.getTime(), employee, PERIOD_NULL_TIME_AM, statementDescriptors);
+							} else if (weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimeAmIdx] != null && weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimeAmIdx] != null) {
+								Calendar temporaryCalendarToStoreBeginTime = getCalendar();
+								temporaryCalendarToStoreBeginTime.setTime(weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimeAmIdx]);
+								temporaryCalendarToStoreBeginTime.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+								temporaryCalendarToStoreBeginTime.set(Calendar.DAY_OF_YEAR, calendar.get(Calendar.DAY_OF_YEAR));
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_AM_MILESTONE, calendar.getTime(), employee, temporaryCalendarToStoreBeginTime.getTime(), PERIOD_BEGIN_TIME_AM, statementDescriptors);
+
+								Calendar temporaryCalendarToStoreEndTime = getCalendar();
+								temporaryCalendarToStoreEndTime.setTime(weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimeAmIdx]);
+								temporaryCalendarToStoreEndTime.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+								temporaryCalendarToStoreEndTime.set(Calendar.DAY_OF_YEAR, calendar.get(Calendar.DAY_OF_YEAR));
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_AM_MILESTONE, calendar.getTime(), employee, temporaryCalendarToStoreEndTime.getTime(), PERIOD_END_TIME_AM, statementDescriptors);
+							} else {
+								//Should not appended (already checked)
+								throw new VuittonException("Inconsistant data for '" + Calendar.DAY_OF_WEEK + "' period '" + amToUpdate + "' . Both fields should be filled or null");
+							}
+						}
+						if (isDayToUpdate[calendar.get(Calendar.DAY_OF_WEEK)][pmToUpdate]) {
+							if (weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimePmIdx] == null && weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimePmIdx] == null) {
+								sqlQueriesCounter++;
+								addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_PM, calendar.getTime(), employee, PERIOD_NULL_TIME_PM, statementDescriptors);
+							} else if (weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimePmIdx] != null && weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimePmIdx] != null) {
+								Calendar temporaryCalendarToStoreBeginTime = getCalendar();
+								temporaryCalendarToStoreBeginTime.setTime(weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][beginTimePmIdx]);
+								temporaryCalendarToStoreBeginTime.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+								temporaryCalendarToStoreBeginTime.set(Calendar.DAY_OF_YEAR, calendar.get(Calendar.DAY_OF_YEAR));
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_PM_MILESTONE, calendar.getTime(), employee, temporaryCalendarToStoreBeginTime.getTime(), PERIOD_BEGIN_TIME_PM, statementDescriptors);
+
+								Calendar temporaryCalendarToStoreEndTime = getCalendar();
+								temporaryCalendarToStoreEndTime.setTime(weekTimes[calendar.get(Calendar.DAY_OF_WEEK)][endTimePmIdx]);
+								temporaryCalendarToStoreEndTime.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+								temporaryCalendarToStoreEndTime.set(Calendar.DAY_OF_YEAR, calendar.get(Calendar.DAY_OF_YEAR));
+								sqlQueriesCounter++;
+								addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_PM_MILESTONE, calendar.getTime(), employee, temporaryCalendarToStoreEndTime.getTime(), PERIOD_END_TIME_PM, statementDescriptors);
+							} else {
+								//Should not appended (already checked)
+								throw new VuittonException("Inconsistant data for '" + Calendar.DAY_OF_WEEK + "' period '" + pmToUpdate + "' . Both fields should be filled or null");
+							}
+						}
+					}
+					calendar.add(Calendar.DAY_OF_YEAR, 1);
+					if (sqlQueriesCounter > MAX_SQL_QUERIES_PER_BATCH) {
+						executeStatementsAndFillWarnings(statement, statementDescriptors, null, updateErrors, sqlQueriesCounter);
+						sqlQueriesCounter = 0;
+						statementDescriptors = new HashMap();
+					}
+				}
+				executeStatementsAndFillWarnings(statement, statementDescriptors, null, updateErrors, sqlQueriesCounter);
+				statementDescriptors = new HashMap();
+
+				persistenceManager.getTransactionManager().freeConnection(connection);
+				persistenceManager.getTransactionManager().commit();
+			} catch (VuittonException ve) {
+				persistenceManager.getTransactionManager().rollback();
+				throw ve;
+			} catch (SQLException sqle) {
+				persistenceManager.getTransactionManager().rollback();
+				throw new VuittonException(sqle);
+			} finally {
+				JdbcUtil.closeStatement(statement);
+				persistenceManager.getTransactionManager().freeConnection(connection);
+				persistenceManager.refresh(true);
+			}
+
+			updateTimeEntries();
+
+			params.put("userSession", getUserSession());
+			params.put("errors", updateErrors);
+			params.put(Parameters.FORWARD_PAGE, getNlsPath(DISPLAY_NOT_UPDATED_WORK_DAYS_JSP));
+		} else {
+			// Sould never append
+			throw new VuittonException("Entries should have been already checked");
+			//displayConfirmationScreen(params);
+		}
+	}
+
+	private void displayUpdateWorkDaysForEmployeesListConfirmationScreen(Map params) throws VuittonException {
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		int warningsBeforeUpdate = warnings.size();
+
+		Map updateValues = new HashMap();
+		Date[][] weekTimes = new Date[nbOfDaysInOneWeek + 1][nbOfHoursToSet];
+		// NOTE : nbOfDaysInOneWeek + 1 : one day is added to fit to Calendar going from [1] to [7]
+		boolean[][] isDayToUpdate = new boolean[nbOfDaysInOneWeek + 1][nbOfPeriodToUpdateInOneDay];
+
+		buildWorkDayUpdateArray(params, warnings, updateValues, weekTimes, isDayToUpdate);
+		validateYearsAndWeeksEntries(params, warnings, updateValues);
+
+		if (warnings.size() == warningsBeforeUpdate) {
+			params.put("readOnly", Boolean.TRUE);
+		} else {
+			params.put("readOnly", Boolean.FALSE);
+		}
+		params.put("calendar", "checked");
+		params.put("includedEmployees", includedEmployeesCache);
+		params.put("updateValues", updateValues);
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(UPDATE_WORK_DAYS_FOR_AN_EMPLOYEES_LIST_JSP));
+	}
+
+	/**
+	 * NOTE : Calendar.SUNDAY = 1 , Calendar.SATURDAY = 7;
+	 * Iterate on Calendar.SUNDAY -> Calendar.SATURDAY
+	 * Build 2 tables :
+	 * 	1) boolean[][] isDayToUpdate 
+	 * 		example : if params.get("Calendar.SUNDAY + _AmUpdate") == true
+	 * 						isDayToUpdate[Calendar.SUNDAY][amToUpdate] = true
+	 *	2) Date[][] weekTimes
+	 *		example : if isDayToUpdate[Calendar.SUNDAY][amToUpdate] = true
+	 *						weekTimes[Calendar.SUNDAY][beginTimeAm] = params.get("Calendar.SUNDAY + _BeginTimeAm") and 
+	 *						weekTimes[Calendar.SUNDAY][beginTimeAm] = params.get("Calendar.SUNDAY + _EndTimeAm")
+	 */
+	private void buildWorkDayUpdateArray(Map params, List warnings, Map updateValues, Date[][] weekTimes, boolean[][] isDayToUpdate) {
+
+		String fakeTemporaryDateString = FormatUtil.format(new Date());
+		String timeFormat = "hh" + getUserSession().getUser().getPreferences().getDecimalFormatSymbols().getDecimalSeparator() + "mm";
+
+		for (int dayOfWeek = 1; dayOfWeek <= nbOfDaysInOneWeek; dayOfWeek++) {
+			Date beginTimeAm = null;
+			Date endTimeAm = null;
+			Date beginTimePm = null;
+			Date endTimePm = null;
+			String beginTimeAmString = (String) params.get(dayOfWeek + _BeginTimeAm);
+			String endTimeAmString = (String) params.get(dayOfWeek + _EndTimeAm);
+			String beginTimePmString = (String) params.get(dayOfWeek + _BeginTimePm);
+			String endTimePmString = (String) params.get(dayOfWeek + _EndTimePm);
+
+			if ("checked".equals(params.get(dayOfWeek + _AmUpdate))) {
+				updateValues.put(dayOfWeek + _AmUpdate, "checked");
+				isDayToUpdate[dayOfWeek][amToUpdate] = true;
+
+				updateValues.put(dayOfWeek + _BeginTimeAm, beginTimeAmString);
+				updateValues.put(dayOfWeek + _EndTimeAm, endTimeAmString);
+
+				beginTimeAm = parseCentiTime(beginTimeAmString, false, null, null, warnings, dayOfWeek + _BeginTimeAm, null);
+				endTimeAm = parseCentiTime(endTimeAmString, beginTimeAm != null, beginTimeAm, null, warnings, dayOfWeek + _EndTimeAm, null);
+
+				if (beginTimeAm == null && endTimeAm != null) {
+					warnings.add(new Warning(getUserSession(), dayOfWeek + _BeginTimeAm, "field_missing"));
+				}
+				weekTimes[dayOfWeek][beginTimeAmIdx] = beginTimeAm;
+				weekTimes[dayOfWeek][endTimeAmIdx] = endTimeAm;
+			}
+
+			if ("checked".equals(params.get(dayOfWeek + _PmUpdate))) {
+				updateValues.put(dayOfWeek + _PmUpdate, "checked");
+
+				isDayToUpdate[dayOfWeek][pmToUpdate] = true;
+				updateValues.put(dayOfWeek + _BeginTimePm, beginTimePmString);
+				updateValues.put(dayOfWeek + _EndTimePm, endTimePmString);
+
+				beginTimePm = parseCentiTime(beginTimePmString, false, endTimeAm, null, warnings, dayOfWeek + _BeginTimePm, null);
+				endTimePm = parseCentiTime(endTimePmString, beginTimePm != null, beginTimePm, null, warnings, dayOfWeek + _EndTimePm, null);
+				if (beginTimePm == null && endTimePm != null) {
+					warnings.add(new Warning(getUserSession(), dayOfWeek + _BeginTimePm, "field_missing"));
+				}
+				weekTimes[dayOfWeek][beginTimePmIdx] = beginTimePm;
+				weekTimes[dayOfWeek][endTimePmIdx] = endTimePm;
+			}
+		}
+	}
+
+	private void validateYearsAndWeeksEntries(Map params, List warnings, Map updateValues) throws VuittonException {
+		int fromYear = parseInt((String) params.get("fromYear"), true, 0, 9999, warnings, "fromYear", 0);
+		updateValues.put("fromYear", String.valueOf(fromYear));
+		int fromWeek = parseInt((String) params.get("fromWeek"), true, 0, 9999, warnings, "fromWeek", 0);
+		updateValues.put("fromWeek", String.valueOf(fromWeek));
+		int toYear = parseInt((String) params.get("toYear"), true, 0, 9999, warnings, "toYear", 0);
+		updateValues.put("toYear", String.valueOf(toYear));
+		int toWeek = parseInt((String) params.get("toWeek"), true, 0, 9999, warnings, "toWeek", 0);
+		updateValues.put("toWeek", String.valueOf(toWeek));
+
+		if (toYear != 0 && toWeek != 0) {
+			Calendar toDateCalendar = SymphonieUtil.getLastDayOfWeek(toYear, toWeek);
+			Calendar theoricToDateCalendar = getCalendar();
+			theoricToDateCalendar.add(Calendar.MONTH, ROLLING_WORK_DAYS_MONTHS_IN_ADVANCE);
+			if (toDateCalendar.getTime().after(theoricToDateCalendar.getTime())) {
+				warnings.add(new Warning(getUserSession().getUser(), "toYear", "value_to_big", new Object[] { new Integer(theoricToDateCalendar.get(Calendar.YEAR)), new Integer(toYear)}));
+				warnings.add(new Warning(getUserSession().getUser(), "toWeek", "value_to_big", new Object[] { new Integer(theoricToDateCalendar.get(Calendar.WEEK_OF_YEAR)), new Integer(toWeek)}));
+			}
+		}
+	}
+
+	/** 
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> employeeUid </td><td></td></tr>
+	 * <tr><td> criterions </td><td></td></tr>
+	 * </table>  
+	 * @param params
+	 */
+	private void displayWorkDaysForOneEmployee(Map params) throws VuittonException {
+		Boolean readOnly = null;
+		if (params.get("readOnly") != null) {
+			readOnly = Boolean.valueOf((String) params.get("readOnly"));
+		} else {
+			readOnly = Boolean.TRUE;
+		}
+		Boolean isConfirmationScreen = null;
+		if (params.get("isConfirmationScreen") != null) {
+			isConfirmationScreen = Boolean.valueOf((String) params.get("isConfirmationScreen"));
+		} else {
+			isConfirmationScreen = Boolean.FALSE;
+		}
+
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		long employeeUid = Long.parseLong((String) params.get("employeeUid"));
+
+		FindParameters workDaysParameter = new FindParameters(WorkDay.class, WorkDaySqlDao.FIND_BY_EMPLOYEE_BETWEEN_DATES);
+		workDaysParameter.addCriterion(WorkDaySqlDao.FIND_PARAM_EMPLOYEE_UID, employeeUid);
+		workDaysParameter.addCriterion(WorkDaySqlDao.FIND_PARAM_BETWEEN_BEGIN_DATE, (Date) searchCriterions.get(WorkDaySqlDao.FIND_PARAM_BETWEEN_BEGIN_DATE));
+		workDaysParameter.addCriterion(WorkDaySqlDao.FIND_PARAM_BETWEEN_END_DATE, (Date) searchCriterions.get(WorkDaySqlDao.FIND_PARAM_BETWEEN_END_DATE));
+		List workDays = persistenceManager.findBos(workDaysParameter);
+
+		params.put("workDays", workDays);
+		params.put("employee", persistenceManager.findBo(Employee.class, employeeUid));
+		params.put("readOnly", readOnly);
+		params.put("isConfirmationScreen", isConfirmationScreen);
+		params.put(Parameters.FORWARD_PAGE, getNlsPath(DISPLAY_WORK_DAYS_FOR_ONE_EMPLOYEE_JSP));
+	}
+
+	/**
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> workDaysCount </td><td></td></tr>
+	 * <tr><td> workDay_x </td><td></td></tr>
+	 * <tr><td> beginTimeAm_x </td><td></td></tr>
+	 * <tr><td> endTimeAm_x </td><td></td></tr>
+	 * <tr><td> beginTimePm_x </td><td></td></tr>
+	 * <tr><td> endTimePm_x </td><td></td></tr>
+	 * </table>  
+	 * @param params
+	 */
+	private void updateWorkDaysForOneEmployee(Map params) throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+		persistenceManager.getTransactionManager().begin();
+		Connection connection = persistenceManager.getTransactionManager().getConnection();
+		List warnings = (List) params.get(Parameters.WARNINGS);
+
+		int warningsBeforeConfirm = warnings.size();
+
+		List workDays = new BosCollection(persistenceManager);
+
+		long workDaysCount = Long.parseLong((String) params.get("workDaysCount"));
+
+		for (int workDaysCounter = 0; workDaysCounter < workDaysCount; workDaysCounter++) {
+			long workDayUid = Long.parseLong((String) params.get("workDay_" + workDaysCounter));
+
+			WorkDay workDay = (WorkDay) persistenceManager.findBo(WorkDay.class, workDayUid);
+			String dateString = FormatUtil.formatDate(workDay.getDate(), getUserSession().getUser());
+			workDay.putAdditionalInformation("dateString", dateString);
+			workDays.add(workDay);
+		}
+
+		Statement statement = null;
+		try {
+			int sqlQueriesCounter = 0;
+
+			statement = connection.createStatement();
+			Map statementDescriptors = new HashMap();
+
+			int workDaysCounter = 0;
+			Iterator itWorkDays = workDays.iterator();
+			while (itWorkDays.hasNext()) {
+				int warningsBeforeUpdate = warnings.size();
+				WorkDay workDay = (WorkDay) itWorkDays.next();
+				String dateString = (String) workDay.getAdditionalInformation("dateString");
+
+				Date beginTimeAm = null;
+				Date endTimeAm = null;
+				Date beginTimePm = null;
+				Date endTimePm = null;
+
+				if ((String) params.get("beginTimeAm_" + workDaysCounter) != null && !((String) params.get("beginTimeAm_" + workDaysCounter)).equals("")) {
+					beginTimeAm = parseCentiDateTime(dateString, (String) params.get("beginTimeAm_" + workDaysCounter), false, null, null, warnings, "beginTimeAm_" + workDaysCounter, workDay.getBeginTimeAm());
+				}
+				if ((String) params.get("endTimeAm_" + workDaysCounter) != null && !((String) params.get("endTimeAm_" + workDaysCounter)).equals("")) {
+					if (beginTimeAm == null) {
+						warnings.add(new Warning(getUserSession().getUser(), "endTimeAm_" + workDaysCounter, "BothFieldsMustBeFilledOrNull"));
+					} else {
+						endTimeAm = parseCentiDateTime(dateString, (String) params.get("endTimeAm_" + workDaysCounter), false, null, null, warnings, "endTimeAm_" + workDaysCounter, workDay.getEndTimeAm());
+					}
+				} else if (beginTimeAm != null) {
+					warnings.add(new Warning(getUserSession().getUser(), "beginTimeAm_" + workDaysCounter, "BothFieldsMustBeFilledOrNull"));
+				}
+
+				if ((String) params.get("beginTimePm_" + workDaysCounter) != null && !((String) params.get("beginTimePm_" + workDaysCounter)).equals("")) {
+					beginTimePm = parseCentiDateTime(dateString, (String) params.get("beginTimePm_" + workDaysCounter), false, null, null, warnings, "beginTimePm_" + workDaysCounter, workDay.getBeginTimePm());
+				}
+				if ((String) params.get("beginTimePm_" + workDaysCounter) != null && !((String) params.get("beginTimePm_" + workDaysCounter)).equals("")) {
+					if (beginTimePm == null) {
+						warnings.add(new Warning(getUserSession().getUser(), "endTimePm_" + workDaysCounter, "BothFieldsMustBeFilledOrNull"));
+					} else {
+						endTimePm = parseCentiDateTime(dateString, (String) params.get("endTimePm_" + workDaysCounter), false, null, null, warnings, "endTimePm_" + workDaysCounter, workDay.getEndTimePm());
+					}
+				} else if (beginTimePm != null) {
+					warnings.add(new Warning(getUserSession().getUser(), "beginTimePm_" + workDaysCounter, "BothFieldsMustBeFilledOrNull"));
+				}
+
+				if (warnings.size() == warningsBeforeUpdate) {
+					if (beginTimeAm == null) {
+						sqlQueriesCounter++;
+						addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_AM, workDay.getDate(), workDay.getEmployee(), PERIOD_NULL_TIME_AM, statementDescriptors);
+					} else {
+						sqlQueriesCounter++;
+						addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_AM_MILESTONE, workDay.getDate(), workDay.getEmployee(), beginTimeAm, PERIOD_BEGIN_TIME_AM, statementDescriptors);
+						sqlQueriesCounter++;
+						addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_AM_MILESTONE, workDay.getDate(), workDay.getEmployee(), endTimeAm, PERIOD_END_TIME_AM, statementDescriptors);
+					}
+
+					if (beginTimePm == null) {
+						sqlQueriesCounter++;
+						addToUpdateWorkDayNullBatch(statement, UPDATE_WORK_DAY_NULL_PM, workDay.getDate(), workDay.getEmployee(), PERIOD_NULL_TIME_PM, statementDescriptors);
+					} else {
+						sqlQueriesCounter++;
+						addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_BEGIN_PM_MILESTONE, workDay.getDate(), workDay.getEmployee(), beginTimePm, PERIOD_BEGIN_TIME_PM, statementDescriptors);
+						sqlQueriesCounter++;
+						addToUpdateWorkDayMilestoneBatch(statement, UPDATE_WORK_DAY_END_PM_MILESTONE, workDay.getDate(), workDay.getEmployee(), endTimePm, PERIOD_END_TIME_PM, statementDescriptors);
+					}
+				}
+				workDaysCounter++;
+			}
+
+			executeStatementsAndFillWarnings(statement, statementDescriptors, warnings, null, sqlQueriesCounter);
+
+			JdbcUtil.closeStatement(statement);
+			persistenceManager.getTransactionManager().freeConnection(connection);
+			persistenceManager.getTransactionManager().commit();
+
+		} catch (VuittonException ve) {
+			persistenceManager.getTransactionManager().rollback();
+			throw ve;
+		} catch (SQLException sqle) {
+			persistenceManager.getTransactionManager().rollback();
+			throw new VuittonException(sqle);
+		} finally {
+			JdbcUtil.closeStatement(statement);
+			persistenceManager.getTransactionManager().freeConnection(connection);
+			persistenceManager.refresh(true);
+		}
+
+		updateTimeEntries();
+
+		if (warnings.size() == warningsBeforeConfirm) {
+			params.put("readOnly", String.valueOf(Boolean.TRUE));
+			params.put("isConfirmationScreen", String.valueOf(Boolean.TRUE));
+			displayWorkDaysForOneEmployee(params);
+		} else {
+			params.put("readOnly", String.valueOf(Boolean.FALSE));
+			params.put("isConfirmationScreen", String.valueOf(Boolean.FALSE));
+			displayWorkDaysForOneEmployee(params);
+		}
+	}
+
+	private void executeStatementsAndFillWarnings(Statement statement, Map statementDescriptors, List warnings, List updateErrors, int sqlQueriesCounter) throws SQLException, VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+
+		logger.debug("Execute batch..." + sqlQueriesCounter + " queries in progress");
+		long timeBefore = getDate().getTime();
+		int[] statementsResults = statement.executeBatch();
+		long timeAfter = getDate().getTime();
+
+		logger.debug(statementsResults.length + " batched queries executed. Time elapsed : " + (timeAfter - timeBefore) + " ms ");
+		for (int i = 0; i < statementsResults.length; i++) {
+			// [employeeUid][workDayDate][milestoneDate][milestone]
+			SqlQueryDescriptor sqlQueryDescriptor = (SqlQueryDescriptor) statementDescriptors.get(new Integer(i));
+			if (statementsResults[i] > 1) {
+				throw new VuittonException("More than one record found for WorkDay (workDayDate='" + sqlQueryDescriptor.getWorkDayDate() + "' and employee='" + sqlQueryDescriptor.getEmployee() + "')");
+			} else if (statementsResults[i] != 1 && statementsResults[i] != Statement.SUCCESS_NO_INFO) {
+				if (warnings != null) {
+					warnings.add(new Warning(getUserSession().getUser(), null, "WorkDayCannotBeUpdated", new Object[] { sqlQueryDescriptor.getWorkDayDate(), sqlQueryDescriptor.getEmployee(), sqlQueryDescriptor.getPeriodDescription()}));
+				} else if (updateErrors != null) {
+					updateErrors.add(sqlQueryDescriptor);
+				}
+			}
+		}
+	}
+
+	/**
+	 * <table><tr><th>parameters</th><th>keyword in params</th></tr>
+	 * <tr><td> searchType</td><td></td></tr>
+	 * </table>
+	 * @param params
+	 */
+	private void confirmWorkDaysUpdate(Map params) throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+
+		String searchType = (String) params.get("searchType");
+		persistenceManager.persistModifications();
+
+		displayEmployeesSearchCriterions(params);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.vuitton.common.application.Initializable#initialize(java.util.Map)
+	 */
+	public void initialize(Map env) throws VuittonException {
+		super.initialize(env);
+
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+
+		FindParameters teamLeadersParameters = new FindParameters(Employee.class, EmployeeSqlDao.FIND_TEAM_LEADERS_BY_FACTORY_UID);
+		teamLeadersParameters.addCriterion(EmployeeSqlDao.FIND_PARAM_FACTORY_UID, ((SymphonieUser) getUserSession().getUser()).getEmployee().getFactory().getBoUid());
+		teamLeaders = persistenceManager.findBos(teamLeadersParameters);
+	}
+
+	//Is it the right place ?
+	private final static int PERIOD_BEGIN_TIME_AM = 0;
+	private final static int PERIOD_END_TIME_AM = 1;
+	private final static int PERIOD_NULL_TIME_AM = 2;
+	private final static int PERIOD_BEGIN_TIME_PM = 3;
+	private final static int PERIOD_END_TIME_PM = 4;
+	private final static int PERIOD_NULL_TIME_PM = 5;
+
+	private final static String UPDATE_WORK_DAY_BEGIN_AM_MILESTONE =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.BEGIN_TIME_AM = {0},"
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {1} "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {2}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {3} OR 0 = "
+			+ "(SELECT count(*) "
+			+ " FROM TIME_ENTRY,WORK_DAY "
+			+ " WHERE TIME_ENTRY.EMPLOYEE_UID = {4}"
+			+ " AND TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {5} "
+			+ " AND (TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.BEGIN_TIME_AM AND {6}"
+			+ " OR TIME_ENTRY.BEGIN_TIME BETWEEN {7} AND WORK_DAY.BEGIN_TIME_AM)))";
+	private final static String UPDATE_WORK_DAY_END_AM_MILESTONE =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.END_TIME_AM = {0},"
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {1} "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {2}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {3} OR 0 = "
+			+ "(SELECT count(*) "
+			+ " FROM TIME_ENTRY,WORK_DAY "
+			+ " WHERE TIME_ENTRY.EMPLOYEE_UID = {4}"
+			+ " AND TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {5} "
+			+ " AND (TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.END_TIME_AM AND {6}"
+			+ " OR TIME_ENTRY.BEGIN_TIME BETWEEN {7} AND WORK_DAY.END_TIME_AM)))";
+	private final static String UPDATE_WORK_DAY_BEGIN_PM_MILESTONE =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.BEGIN_TIME_PM = {0},"
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {1} "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {2}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {3} OR 0 = "
+			+ "(SELECT count(*) "
+			+ " FROM TIME_ENTRY,WORK_DAY "
+			+ " WHERE TIME_ENTRY.EMPLOYEE_UID = {4}"
+			+ " AND TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {5} "
+			+ " AND (TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.BEGIN_TIME_PM AND {6}"
+			+ " OR TIME_ENTRY.BEGIN_TIME BETWEEN {7} AND WORK_DAY.BEGIN_TIME_PM)))";
+	private final static String UPDATE_WORK_DAY_END_PM_MILESTONE =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.END_TIME_PM = {0},"
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {1} "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {2}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {3} OR 0 = "
+			+ "(SELECT count(*) "
+			+ " FROM TIME_ENTRY,WORK_DAY "
+			+ " WHERE TIME_ENTRY.EMPLOYEE_UID = {4}"
+			+ " AND TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID "
+			+ " AND WORK_DAY.WORK_DAY_DATE = {5} "
+			+ " AND (TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.END_TIME_PM AND {6}"
+			+ " OR TIME_ENTRY.BEGIN_TIME BETWEEN {7} AND WORK_DAY.END_TIME_PM)))";
+
+	private final static String UPDATE_WORK_DAY_NULL_AM =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.BEGIN_TIME_AM = NULL, WORK_DAY.END_TIME_AM = NULL, "
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {0}"
+			+ " AND WORK_DAY.WORK_DAY_DATE = {1}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {2} OR 0 = ("
+			+ "	SELECT count(*) "
+			+ "	FROM TIME_ENTRY, WORK_DAY WHERE "
+			+ "	TIME_ENTRY.EMPLOYEE_UID = {3} AND"
+			+ "	TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID AND"
+			+ "	WORK_DAY.WORK_DAY_DATE = {4} AND			   "
+			+ "	TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.BEGIN_TIME_AM AND WORK_DAY.END_TIME_AM))";
+
+	private final static String UPDATE_WORK_DAY_NULL_PM =
+		"UPDATE WORK_DAY "
+			+ " SET WORK_DAY.BEGIN_TIME_PM = NULL, WORK_DAY.END_TIME_PM = NULL, "
+			+ " WORK_DAY.TEC_LAST_MODIFICATION = SYSDATE,"
+			+ " WORK_DAY.TEC_LOCK = (WORK_DAY.TEC_LOCK + 1)"
+			+ " WHERE WORK_DAY.EMPLOYEE_UID = {0}"
+			+ " AND WORK_DAY.WORK_DAY_DATE = {1}"
+			+ " AND (WORK_DAY.WORK_DAY_DATE > {2} OR 0 = ("
+			+ "	SELECT count(*) "
+			+ "	FROM TIME_ENTRY, WORK_DAY WHERE "
+			+ "	TIME_ENTRY.EMPLOYEE_UID = {3} AND"
+			+ "	TIME_ENTRY.EMPLOYEE_UID = WORK_DAY.EMPLOYEE_UID AND"
+			+ "	WORK_DAY.WORK_DAY_DATE = {4} AND			   "
+			+ "	TIME_ENTRY.BEGIN_TIME BETWEEN WORK_DAY.BEGIN_TIME_PM AND WORK_DAY.END_TIME_PM))";
+
+	private void addToUpdateWorkDayMilestoneBatch(Statement statement, String sqlQuery, Date workDayDate, Employee employee, Date milestoneDate, int periodIdentifier, Map batchedQueries) throws VuittonException {
+		try {
+			Long employeeUidLong = new Long(employee.getBoUid());
+			Object[] args =
+				{
+					JdbcUtil.formatTimeStampToOracleTO_DATE(milestoneDate),
+					String.valueOf(employeeUidLong),
+					JdbcUtil.formatDateToOracleTO_DATE(workDayDate),
+					JdbcUtil.formatDateToOracleTO_DATE(new Date()),
+					String.valueOf(employeeUidLong),
+					JdbcUtil.formatDateToOracleTO_DATE(workDayDate),
+					JdbcUtil.formatTimeStampToOracleTO_DATE(milestoneDate),
+					JdbcUtil.formatTimeStampToOracleTO_DATE(milestoneDate)};
+
+			String sql = FormatUtil.format(sqlQuery, args);
+			statement.addBatch(sql);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Add to batch :" + sql);
+			}
+			SqlQueryDescriptor sqlQueryDescriptor = new SqlQueryDescriptor(workDayDate, employee, periodIdentifier, milestoneDate, getUserSession().getUser().getPreferences().getLocale());
+
+			batchedQueries.put(new Integer(batchedQueries.size()), sqlQueryDescriptor);
+
+			employeesWhomHaveTimeEntriesToUpdate.add(employeeUidLong);
+			datesAtWhichThereAreTimeEntriesToUpdate.add(workDayDate);
+
+		} catch (Exception e) {
+			throw new VuittonException(e);
+		}
+	}
+
+
+	private void addToUpdateWorkDayNullBatch(Statement statement, String sqlQuery, Date workDayDate, Employee employee, int periodIdentifier, Map batchedQueries) throws VuittonException {
+		try {
+			Object[] args = { String.valueOf(employee.getBoUid()), JdbcUtil.formatDateToOracleTO_DATE(workDayDate), JdbcUtil.formatDateToOracleTO_DATE(new Date()), String.valueOf(employee.getBoUid()), JdbcUtil.formatDateToOracleTO_DATE(workDayDate)};
+
+			String sql = FormatUtil.format(sqlQuery, args);
+			statement.addBatch(sql);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Add to batch :" + sql);
+			}
+			SqlQueryDescriptor sqlQueryDescriptor = new SqlQueryDescriptor(workDayDate, employee, periodIdentifier, null, getUserSession().getUser().getPreferences().getLocale());
+
+			batchedQueries.put(new Integer(batchedQueries.size()), sqlQueryDescriptor);
+
+		} catch (Exception e) {
+			throw new VuittonException(e);
+		}
+	}
+
+	/**
+	 * TODO JavaDoc
+	 * @throws VuittonException
+	 */
+	private void updateTimeEntries() throws VuittonException {
+		PersistenceManager persistenceManager = getUserSession().getPersistenceManager();
+
+		if (employeesWhomHaveTimeEntriesToUpdate.size() == 0) {
+			return;
+		}
+		try {
+			persistenceManager.getTransactionManager().begin();
+
+			StringBuffer sqlQuery = new StringBuffer();
+
+			sqlQuery.append("SELECT " + TimeEntrySqlDao.TIME_ENTRY_COLUMNS + " FROM TIME_ENTRY " + " WHERE TIME_ENTRY.EMPLOYEE_UID IN (");
+
+			for (Iterator itEmployee = employeesWhomHaveTimeEntriesToUpdate.iterator(); itEmployee.hasNext();) {
+				Long employeeUid = (Long) itEmployee.next();
+				sqlQuery.append(String.valueOf(employeeUid));
+				if (itEmployee.hasNext()) {
+					sqlQuery.append(", ");
+				}
+			}
+			sqlQuery.append(") ");
+
+			String AND = " AND (";
+			for (Iterator itDates = datesAtWhichThereAreTimeEntriesToUpdate.iterator(); itDates.hasNext();) {
+				Date date = (Date) itDates.next();
+				sqlQuery.append(AND + " TRUNC(TIME_ENTRY.BEGIN_TIME,  'DD') = " + JdbcUtil.formatDateToOracleTO_DATE(date));
+				AND = " OR ";
+				if (!itDates.hasNext()) {
+					sqlQuery.append(")");
+				}
+			}
+
+			SqlDao timeEntrySqlDao = persistenceManager.getSqlDao(TimeEntry.class);
+			Set timeEntries = new HashSet();
+			Set loadedTimeEntriesUid = new HashSet();
+
+			Connection cnn = null;
+			Statement stmt = null;
+			ResultSet rst = null;
+			try {
+				cnn = persistenceManager.getTransactionManager().getConnection();
+				stmt = cnn.createStatement();
+
+				rst = stmt.executeQuery(sqlQuery.toString());
+				while (rst.next()) {
+					BoKey key = new BoKey(persistenceManager, TimeEntry.class, rst.getLong(1));
+					Bo bo = timeEntrySqlDao.load(persistenceManager, key, rst, 1);
+					timeEntries.add(bo);
+					loadedTimeEntriesUid.add(new Long(bo.getBoUid()));
+				}
+			} catch (Throwable t) {
+				persistenceManager.getTransactionManager().setRollbackOnly();
+				throw new VuittonException(t);
+			} finally {
+				JdbcUtil.closeSqlObject(stmt, rst);
+				persistenceManager.getTransactionManager().freeConnection(cnn);
+			}
+
+			StringBuffer sqlQueryForPreviousTimeEntries = new StringBuffer();
+			Set previousTimeEntries = new HashSet();
+
+			/*
+			 *  maximum number of uid in IN() subquery is 1000 !!!
+			 * => build several sub queries
+			 */
+			final int ORACLE_IN_LIMITATION = 1000;
+
+			Iterator itTimeEntries = timeEntries.iterator();
+			while (itTimeEntries.hasNext()) {
+				TimeEntry timeEntry = (TimeEntry) itTimeEntries.next();
+				BoKey previousTimeEntryKey = timeEntry.getPreviousTimeEntryKey();
+				if (previousTimeEntryKey != null) {
+					if (!loadedTimeEntriesUid.contains(new Long(previousTimeEntryKey.getBoUid()))) {
+						previousTimeEntries.add(new Long(previousTimeEntryKey.getBoUid()));
+					}
+				}
+			}
+
+			int previousTimeEntriesCouter = 0;
+			//FIXME : To be tested (seems to be working)
+			Iterator itPreviousTimeEntries = previousTimeEntries.iterator();
+			while (itPreviousTimeEntries.hasNext()) {
+				if (previousTimeEntriesCouter == 0) {
+					sqlQueryForPreviousTimeEntries = new StringBuffer();
+					sqlQueryForPreviousTimeEntries.append("SELECT " + TimeEntrySqlDao.TIME_ENTRY_COLUMNS + " FROM TIME_ENTRY " + " WHERE TIME_ENTRY.TEC_UID IN(");
+				}
+				sqlQueryForPreviousTimeEntries.append(String.valueOf((Long) itPreviousTimeEntries.next()) + ", ");
+				previousTimeEntriesCouter++;
+				if (previousTimeEntriesCouter == ORACLE_IN_LIMITATION || !itPreviousTimeEntries.hasNext()) {
+					sqlQueryForPreviousTimeEntries = new StringBuffer(sqlQueryForPreviousTimeEntries.substring(0, sqlQueryForPreviousTimeEntries.length() - 2));
+					sqlQueryForPreviousTimeEntries.append(")");
+
+					cnn = null;
+					stmt = null;
+					rst = null;
+					try {
+						cnn = persistenceManager.getTransactionManager().getConnection();
+						stmt = cnn.createStatement();
+						rst = stmt.executeQuery(sqlQueryForPreviousTimeEntries.toString());
+						while (rst.next()) {
+							BoKey key = new BoKey(persistenceManager, TimeEntry.class, rst.getLong(1));
+							Bo bo = timeEntrySqlDao.load(persistenceManager, key, rst, 1);
+							timeEntries.add(bo);
+						}
+					} catch (Throwable t) {
+						persistenceManager.getTransactionManager().setRollbackOnly();
+						throw new VuittonException(t);
+					} finally {
+						JdbcUtil.closeSqlObject(stmt, rst);
+						persistenceManager.getTransactionManager().freeConnection(cnn);
+					}
+					previousTimeEntriesCouter = 0;
+				}
+			}
+
+			Iterator itAllTimeEntries = timeEntries.iterator();
+			while (itAllTimeEntries.hasNext()) {
+				TimeEntry timeEntry = (TimeEntry) itAllTimeEntries.next();
+				if (timeEntry.getNextTimeEntryKey() != null) {
+					timeEntry.calculateDuration();
+				}
+			}
+
+			persistenceManager.getTransactionManager().commit();
+
+			persistenceManager.persistModifications();
+			persistenceManager.refresh(true);
+
+		} catch (Throwable t) {
+			persistenceManager.getTransactionManager().rollback();
+			throw new VuittonException(t);
+		}
+	}
+
+	public class SqlQueryDescriptor implements Comparable{
+		private Date workDayDate;
+		private Employee employee;
+		private int period;
+		private Date newDate;
+		private Locale locale;
+		public SqlQueryDescriptor(Date workDayDate, Employee employee, int period, Date newDate, Locale locale) {
+			this.workDayDate = workDayDate;
+			this.employee = employee;
+			this.period = period;
+			this.newDate = newDate;
+			this.locale = locale;
+		}
+		/**
+		 * @return
+		 */
+		public Employee getEmployee() {
+			return employee;
+		}
+
+		/**
+		 * @return
+		 */
+		public Date getNewDate() {
+			return newDate;
+		}
+
+		/**
+		 * @return
+		 */
+		public int getPeriod() {
+			return period;
+		}
+
+		/**
+		 * @return
+		 */
+		public Date getWorkDayDate() {
+			return workDayDate;
+		}
+		public String getPeriodDescription() throws VuittonException{
+			String descriptorKey;
+			switch (period) {
+				case PERIOD_BEGIN_TIME_AM :
+					descriptorKey = "beginTimeAm";
+					break;
+				case PERIOD_END_TIME_AM :
+					descriptorKey = "endTimeAm";
+					break;
+				case PERIOD_NULL_TIME_AM :
+					descriptorKey = "nullTimeAm";
+					break;
+				case PERIOD_BEGIN_TIME_PM :
+					descriptorKey = "beginTimePm";
+					break;
+				case PERIOD_END_TIME_PM :
+					descriptorKey = "endTimePm";
+					break;
+				case PERIOD_NULL_TIME_PM :
+					descriptorKey = "nullTimePm";
+					break;
+				default :
+					throw new VuittonException("Unsupported periodIdentifier : "  + period);
+			}
+			return Messages.getString(locale, descriptorKey);
+		}
+		/* (non-Javadoc)
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		public int compareTo(Object o) {
+			if (o instanceof SqlQueryDescriptor) {
+				SqlQueryDescriptor sqlQueryDescriptor = (SqlQueryDescriptor) o;
+				return new CompareToBuilder().append(getEmployee().getCode(), sqlQueryDescriptor.getEmployee().getCode()).append(workDayDate, sqlQueryDescriptor.getWorkDayDate()).append(period, sqlQueryDescriptor.getPeriod()).toComparison();
+			} else {
+				throw new ClassCastException("Class '" + o.getClass() + "' NOT supported");
+			}			
+		}
+	}
+}

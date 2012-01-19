@@ -1,0 +1,678 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bos package="com.vuitton.sesame" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="businessObjects.xsd">
+	<bo name="Activity" plural="Activities">
+		<sub-package>product</sub-package>
+		<db-table name="ACTIVITY" sequence="SEQ_ACTIVITY" />
+		<fields>
+			<field name="activityCode" nullable="false" type="String">
+				<db-column name="ACTIVITY_CODE" type="VARCHAR2(8)"/>
+			</field>
+			<field name="description" nullable="false" type="String">
+				<db-column name="DESCRIPTION" type="VARCHAR2(30)"/>
+			</field>	
+		</fields>
+	</bo>
+	<bo name="BusinessUnit" plural="BusinessUnits">
+		<sub-package>businessunit</sub-package>
+		<db-table name="BUSINESS_UNIT" sequence="SEQ_BUSINESS_UNIT" />
+		<fields>
+			<field name="name" nullable="false" searchable="true" type="String">
+				<db-column name="NAME" type="VARCHAR2(30)"/>
+			</field>
+			<field name="businessUnitCode" searchable="true" nullable="true" type="int">
+				<db-column name="BUSINESS_UNIT_CODE" type="NUMBER(10)"/>
+			</field>
+			<field name="status" nullable="false" type="int">
+				<db-column name="STATUS" type="NUMBER(5)"/>
+			</field>
+			<field name="description" nullable="false" type="String">
+				<db-column name="DESCRIPTION" type="VARCHAR2(30)"/>
+			</field>
+			<field name="addressLine1" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_1" type="VARCHAR2(30)"/>
+			</field>						
+			<field name="addressLine2" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_2" type="VARCHAR2(30)"/>
+			</field>						
+			<field name="addressLine3" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_3" type="VARCHAR2(30)"/>
+			</field>	
+			<field name="zipCode" nullable="false" type="String">
+				<db-column name="ZIP_CODE" type="VARCHAR2(10)"/>
+			</field>	
+			<field name="city" nullable="false" type="String">
+				<db-column name="CITY" type="VARCHAR2(30)"/>
+			</field>	
+			<field name="country" nullable="false" type="String">
+				<db-column name="COUNTRY" type="VARCHAR2(30)"/>
+			</field>
+			<field name="ordersDisplayBeginningDate" nullable="true" type="Date">
+				<db-column name="ORDERS_DISPLAY_BEGINNING_DATE" type="Date"/>
+			</field>
+			<field name="ordersDisplayEndingDate" nullable="true" type="Date">
+				<db-column name="ORDERS_DISPLAY_ENDING_DATE" type="Date"/>
+			</field>
+			<field name="deliveryOrdersSequence" nullable="true" type="long">
+				<db-column name="DELIVERY_ORDERS_SEQUENCE" type="NUMBER(18)"/>
+			</field>																															
+			<field name="manufacturedProducts" nullable="false" type="BosRelation" class="ManufacturedProduct">
+				<db-table name="MANUFACTURED_PRODUCT" foreign-key="BUSINESS_UNIT_UID"/>
+			</field>
+			<field name="weeklyCapacities" nullable="false" type="BosRelation" class="WeeklyCapacity">
+				<db-table name="WEEKLY_CAPACITY" foreign-key="BUSINESS_UNIT_UID"/>
+			</field>
+			<field name="calendarWeeks" nullable="false" type="BosRelation" class="CalendarWeek">
+				<db-table name="CALENDAR_WEEK" foreign-key="BUSINESS_UNIT_UID"/>
+			</field>
+			<field name="minimalWeeklyCapacity" nullable="false"  type="int">
+				<db-column name="MINIMAL_WEEKLY_CAPACITY" type="NUMBER(5)"/>
+			</field>
+			<field name="maximalWeeklyCapacity" nullable="false"  type="int">
+				<db-column name="MAXIMAL_WEEKLY_CAPACITY" type="NUMBER(5)"/>
+			</field>
+			<field name="businessUnitActivities" type="BosRelation" class="BusinessUnitActivity">
+				<db-table name="BUSINESS_UNIT_ACTIVITY" foreign-key="BUSINESS_UNIT_UID"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="BusinessUnitActivity" plural="BusinessUnitActivities">
+		<sub-package>businessunit</sub-package>
+		<db-table name="ACTIVITY" sequence="SEQ_ACTIVITY" />
+		<fields>
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="activity" nullable="false" searchable="true" type="BoKey" class="Activity">
+				<db-column name="ACTIVITY_UID" type="NUMBER(18)"/>
+			</field>	
+		</fields>
+	</bo>
+	<bo name="CalendarWeek" plural="CalendarWeeks">
+		<sub-package>businessunit</sub-package>
+		<db-table name="CALENDAR_WEEK" sequence="SEQ_CALENDAR_WEEK" />
+		<fields>
+			<field name="year" nullable="false" type="int">
+				<db-column name="YEAR" type="NUMBER(10)"/>
+			</field>
+			<field name="weekNumber" type="int">
+				<db-column name="WEEK_NUMBER" type="NUMBER(10)"/>
+			</field>
+			<field name="firstDay" type="Date">
+				<db-column name="FIRST_DAY" type="DATE"/>
+			</field>
+				<field name="lastDay" type="Date">
+				<db-column name="LAST_DAY" type="DATE"/>
+			</field>
+				<field name="openedDays" type="float">
+				<db-column name="OPENED_DAYS" type="NUMBER(18,3)"/>
+			</field>	
+			<field name="weeklyCapacities" nullable="false" type="BosRelation" class="WeeklyCapacity">
+				<db-table name="WEEKLY_CAPACITY" foreign-key="CALENDAR_WEEK_UID"/>
+			</field>									
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="DeliveryOrder" plural="DeliveryOrders">
+		<sub-package>order</sub-package>
+		<db-table name="DELIVERY_ORDER" sequence="SEQ_DELIVERY_ORDER_LINE" />
+		<fields>
+			<field name="deliveryOrderLvmCode" nullable="false" type="String">
+				<db-column name="DELIVERY_ORDER_LVM_CODE" type="VARCHAR2(30)"/>
+			</field>	
+			<field name="deliveryOrderCode" nullable="false" type="String">
+				<db-column name="DELIVERY_ORDER_CODE" type="VARCHAR2(30)"/>
+			</field>		
+			<field name="shippedDate" nullable="false" type="Date">
+				<db-column name="SHIPPED_DATE" type="DATE"/>
+			</field>
+			<field name="carrier" nullable="false" type="String">
+				<db-column name="CARRIER" type="VARCHAR2(30)"/>
+			</field>
+			<field name="totalWeight" nullable="true" type="Float">
+				<db-column name="TOTAL_WEIGHT" type="NUMBER(18,3)"/>
+			</field>
+			<field name="weightUnit" nullable="false" type="int">
+				<db-column name="WEIGHT_UNIT" type="NUMBER(5)"/>
+			</field>	
+			<field name="totalVolume" nullable="true" type="Float">
+				<db-column name="TOTAL_VOLUME" type="NUMBER(18,3)"/>
+			</field>
+			<field name="volumeUnit" nullable="false" type="int">
+				<db-column name="VOLUME_UNIT" type="NUMBER(5)"/>
+			</field>
+			<field name="productsOrder" nullable="false" searchable="true" type="BoKey" class="ProductsOrder">
+				<db-column name="PRODUCTS_ORDER_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="deliveryOrderLines" nullable="false" type="BosRelation" class="DeliveryOrderLine">
+				<db-table name="DELIVERY_ORDER_LINE" foreign-key="DELIVERY_ORDER_UID"/>
+			</field>																
+		</fields>
+	</bo>
+	<bo name="DeliveryOrderLine" plural="DeliveryOrderLines">
+		<sub-package>order</sub-package>
+		<db-table name="DELIVERY_ORDER_LINE" sequence="SEQ_DELIVERY_ORDER_LINE" />
+		<fields>
+			<field name="quantity" nullable="false" type="int">
+				<db-column name="QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="orderLine" nullable="false" searchable="true" type="BoKey" class="OrderLine">
+				<db-column name="ORDER_LINE_UID" type="NUMBER(18)"/>
+			</field>	
+			<field name="deliveryOrder" nullable="false" searchable="true" type="BoKey" class="DeliveryOrder">
+				<db-column name="DELIVERY_ORDER_UID" type="NUMBER(18)"/>
+			</field>										
+			<field name="comments" nullable="false" searchable="true" type="String">
+				<db-column name="COMMENTS" type="VARCHAR2(50)"/>
+			</field>										
+			<field name="status" nullable="false" searchable="true" type="int">
+				<db-column name="STATUS" type="NUMBER(5)"/>
+			</field>										
+		</fields>
+	</bo>
+	<bo name="DeliverySite" plural="DeliverySites">
+		<sub-package>deliverySite</sub-package>
+		<db-table name="DELIVERY_SITE" sequence="SEQ_DELIVERY_SITE" />
+		<fields>
+			<field name="siteCode" nullable="false" type="String">
+				<db-column name="DELIVERY_SITE_CODE" type="VARCHAR2(8)"/>
+			</field>
+			<field name="addressLine1" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_1" type="VARCHAR2(30)"/>
+			</field>
+			<field name="addressLine2" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_2" type="VARCHAR2(30)"/>
+			</field>
+			<field name="addressLine3" nullable="false" type="String">
+				<db-column name="ADDRESS_LINE_3" type="VARCHAR2(30)"/>
+			</field>			
+			<field name="zipCode" nullable="false" type="String">
+				<db-column name="ZIP_CODE" type="VARCHAR2(30)"/>
+			</field>
+			<field name="city" nullable="false" type="String">
+				<db-column name="CITY" type="VARCHAR2(30)"/>
+			</field>
+			<field name="country" nullable="false" type="String">
+				<db-column name="COUNTRY" type="VARCHAR2(30)"/>
+			</field>							
+		</fields>
+	</bo>
+	<bo name="LogMessage" plural="LogMessages">
+		<sub-package>log</sub-package>
+		<db-table name="LOG_MESSAGE" sequence="SEQ_LOG_MESSAGE" />
+		<fields>
+			<field name="type" nullable="false" searchable="false" type="int">
+				<db-column name="TYPE" type="NUMBER(10)"/>
+			</field>
+			<field name="message" nullable="true" type="String">
+				<db-column name="MESSAGE" type="VARCHAR2(500)"/>
+			</field>
+			<field name="messageDate" nullable="true" searchable="true" type="Date">
+				<db-column name="MESSAGE_DATE" type="Date"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="ManufacturedProduct" plural="ManufacturedProducts">
+		<sub-package>businessunit</sub-package>
+		<db-table name="MANUFACTURED_PRODUCT" sequence="SEQ_MANUFACTURED_PRODUCT" />
+		<fields>
+			<field name="minimumQuantity" nullable="false" type="int">
+				<db-column name="MINIMUM_QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="planningLeadTime" nullable="false" type="int">
+				<db-column name="PLANNING_LEAD_TIME" type="NUMBER(10)"/>
+			</field>			
+			<field name="manufacturingLeadTimes" nullable="false" type="BosRelation" class="ManufacturingLeadTime">
+				<db-table name="MANUFACTURING_LEAD_TIME" foreign-key="MANUFACTURED_PRODUCT_UID"/>
+			</field>			
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="product" nullable="false" searchable="true" type="BoKey" class="Product">
+				<db-column name="PRODUCT_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="maximumQuantities" type="BosRelation" class="MaximumQuantity">
+				<db-table name="MAXIMUM_QUANTITY" foreign-key="MANUFACTURED_PRODUCT_UID"/>
+			</field>			
+		</fields>
+	</bo>
+	<bo name="ManufacturingLeadTime" plural="ManufacturingLeadTimes">
+		<sub-package>businessunit</sub-package>
+		<db-table name="MANUFACTURING_LEAD_TIME" sequence="SEQ_MANUFACTURING_LEAD_TIME" />		
+		<fields>
+			<field name="periodType" nullable="false" type="int">
+				<db-column name="PERIOD_TYPE" type="NUMBER(5)"/>
+			</field>
+			<field name="period" nullable="false" type="int">
+				<db-column name="PERIOD" type="NUMBER(10)"/>
+			</field>		
+			<field name="year" nullable="false" type="int">
+				<db-column name="YEAR" type="NUMBER(10)"/>
+			</field>					
+			<field name="leadTime" nullable="false" type="float">
+				<db-column name="LEADTIME" type="NUMBER(18,3)"/>
+			</field>					
+			<field name="manufacturedProduct" nullable="false" searchable="true" type="BoKey" class="ManufacturedProduct">
+				<db-column name="MANUFACTURED_PRODUCT_UID" type="NUMBER(18)"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="MaximumQuantity" plural="MaximumQuantities">
+		<sub-package>businessunit</sub-package>
+		<db-table name="MAXIMUM_QUANTITY" sequence="SEQ_MAXIMUM_QUANTITY" />
+		<fields>
+			<field name="beginningDate" nullable="true" type="Date">
+				<db-column name="BEGINNING_DATE" type="DATE"/>
+			</field>
+			<field name="quantity" nullable="true" type="Integer">
+				<db-column name="QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="familyCode" nullable="true" type="String">
+				<db-column name="FAMILY_CODE" type="VARCHAR2(30)"/>
+			</field>
+			<field name="manufacturedProduct" nullable="false" searchable="true" type="BoKey" class="ManufacturedProduct">
+				<db-column name="MANUFACTURED_PRODUCT_UID" type="NUMBER(18)"/>
+			</field>		
+		</fields>
+	</bo>
+	<bo name="OrderLine" plural="OrderLines">
+		<sub-package>order</sub-package>
+		<db-table name="ORDER_LINE" sequence="SEQ_ORDER_LINE" />
+		<fields>
+			<field name="plannedQuantity" nullable="false" type="int">
+				<db-column name="PLANNED_QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="plannedDate" nullable="false" type="Date">
+				<db-column name="PLANNED_DATE" type="DATE"/>
+			</field>
+			<field name="shippedQuantity" nullable="false" type="int">
+				<db-column name="SHIPPED_QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="lastShippedDate" nullable="true" type="Date">
+				<db-column name="LAST_SHIPPED_DATE" type="DATE"/>
+			</field>
+			<field name="forecastedQuantity" nullable="true" type="Integer">
+				<db-column name="FORECASTED_QUANTITY" type="NUMBER(10)"/>
+			</field>
+			<field name="forecastedDate" nullable="true" type="Date">
+				<db-column name="FORECASTED_DATE" type="DATE"/>
+			</field>
+			<field name="status" nullable="false" type="int">
+				<db-column name="STATUS" type="NUMBER(5)"/>
+			</field>	
+			<field name="deliveryOrderLines" nullable="false" type="BosRelation" class="DeliveryOrderLine">
+				<db-table name="DELIVERY_ORDER_LINE" foreign-key="ORDER_LINE_UID"/>
+			</field>
+			<field name="productsOrder" nullable="false" searchable="true" type="BoKey" class="ProductsOrder">
+				<db-column name="PRODUCTS_ORDER_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="product" nullable="false" searchable="false" type="BoKey" class="Product">
+				<db-column name="PRODUCT_UID" type="NUMBER(18)" />
+			</field>
+			<field name="deliverySite" nullable="false" searchable="false" type="BoKey" class="DeliverySite">
+				<db-column name="DELIVERY_SITE_UID" type="NUMBER(18)" />
+			</field>																			
+			<field name="status" nullable="false" searchable="true" type="int">
+				<db-column name="STATUS" type="NUMBER(5)"/>
+			</field>										
+		</fields>
+	</bo>
+	<bo name="ShoesOrderLine" plural="ShoesOrderLines" extends="OrderLine">
+		<sub-package>order</sub-package>
+		<db-table name="SHOES_ORDER_LINE" sequence="SEQ_SHOES_ORDER_LINE" />
+		<fields>
+			<field name="orderLineType" nullable="false" searchable="false" type="BoKey" class="OrderLineType">
+				<db-column name="ORDER_LINE_TYPE_UID" type="NUMBER(18)" />
+			</field>																			
+		</fields>
+	</bo>
+	<bo name="Product" plural="Products">
+		<sub-package>product</sub-package>
+		<db-table name="PRODUCT" sequence="SEQ_PRODUCT" />
+		<fields>
+			<field name="productCode" nullable="false" type="String">
+				<db-column name="PRODUCT_CODE" type="VARCHAR2(15)"/>
+			</field>
+			<field name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR2(30)"/>
+			</field>			
+			<field name="description" nullable="true" type="String">
+				<db-column name="DESCRIPTION" type="VARCHAR2(30)"/>
+			</field>
+			<field name="ucs" nullable="false" type="int">
+				<db-column name="UCS" type="NUMBER(10)"/>
+			</field>
+			<field name="quantityUnit" nullable="false" type="int">
+				<db-column name="QUANTITY_UNIT" type="NUMBER(5)"/>
+			</field>
+			<field name="activity" nullable="false" searchable="false" type="BoKey" class="Activity">
+				<db-column name="ACTIVITY_UID" type="NUMBER(18)"/>
+			</field>	
+		</fields>
+	</bo>
+	<bo name="ShoesProduct" plural="ShoesProducts" extends="Product">
+		<sub-package>product</sub-package>
+		<db-table name="SHOES_PRODUCT" sequence="SEQ_SHOES_PRODUCT" />
+		<fields>
+			<field name="coloredModel" nullable="false" searchable="true" type="BoKey" class="ColoredModel">
+				<db-column name="COLORED_MODEL_UID" type="NUMBER(18)" />
+			</field>
+			<field name="size" nullable="false" searchable="true" type="BoKey" class="Size">
+				<db-column name="SIZE_UID" type="NUMBER(18)" />
+			</field>	
+		</fields>
+	</bo>
+	<bo name="ProductsOrder" plural="ProductsOrders">
+		<sub-package>order</sub-package>
+		<db-table name="PRODUCTS_ORDER" sequence="SEQ_PRODUCTS_ORDER" />
+		<fields>
+			<field name="orderCode" nullable="false" type="String">
+				<db-column name="PRODUCTS_ORDER_CODE" type="VARCHAR2(8)"/>
+			</field>
+			<field name="orderLines" nullable="false" type="BosRelation" class="OrderLine">
+				<db-table name="ORDER_LINE" foreign-key="PRODUCTS_ORDER_UID"/>
+			</field>
+			<field name="deliveryOrders" nullable="false" type="BosRelation" class="DeliveryOrder">
+				<db-table name="DELIVERY_ORDER" foreign-key="PRODUCTS_ORDER_UID"/>
+			</field>
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="orderCode" nullable="false" type="String">
+				<db-column name="PRODUCTS_ORDER_CODE" type="VARCHAR2(8)"/>
+			</field>																
+		</fields>
+	</bo>
+	<bo name="ShoesProductsOrder" plural="ShoesProductsOrders" extends="ProductsOrder">
+		<sub-package>order</sub-package>
+		<db-table name="SHOES_PRODUCTS_ORDER" sequence="SEQ_SHOES_PRODUCTS_ORDER" />
+		<fields>
+			<field name="orderTerms" nullable="false" type="BosRelation" class="OrderTerm">
+				<db-table name="ORDER_TERM" foreign-key="PRODUCTS_ORDER_UID"/>
+			</field>
+			<field name="beginningDate" nullable="false" type="Date">
+				<db-column name="BEGINNING_DATE" type="DATE"/>
+			</field>
+			<field name="endingDate" nullable="false" type="Date">
+				<db-column name="ENDING_DATE" type="DATE"/>
+			</field>
+			<field name="collection" nullable="false" searchable="true" type="BoKey" class="Collection">
+				<db-column name="COLLECTION_UID" type="NUMBER(18)"/>
+			</field>																
+		</fields>
+	</bo>
+	<bo name="WeeklyCapacity" plural="WeeklyCapacities">
+		<sub-package>businessunit</sub-package>
+		<db-table name="WEEKLY_CAPACITY" sequence="SEQ_WEEKLY_CAPACITY" />
+		<fields>
+			<field name="capacity" nullable="false" type="int">
+				<db-column name="CAPACITY" type="NUMBER(10)"/>
+			</field>
+			<field name="activity" nullable="false" searchable="false" type="BoKey" class="Activity">
+				<db-column name="ACTIVITY_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>
+			<field name="calendarWeek" nullable="false" searchable="true" type="BoKey" class="CalendarWeek">
+				<db-column name="CALENDAR_WEEK_UID" type="NUMBER(18)"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="ShoesLeadTime" plural="ShoesLeadTimes">
+		<sub-package>shoesleadtime</sub-package>
+		<db-table name="SHOES_LEAD_TIME" sequence="SEQ_SHOES_LEAD_TIME"/>
+		<fields>
+			<field max="99999" min="0" name="cutting" nullable="false" type="int">
+				<db-column name="CUTTING" type="NUMBER(10)"/>
+			</field>
+			<field max="99999" min="0" name="binding" nullable="false" type="int">
+				<db-column name="BINDING" type="NUMBER(10)"/>
+			</field>
+			<field max="99999" min="0" name="lasting" nullable="false" type="int">
+				<db-column name="LASTING" type="NUMBER(10)"/>
+			</field>
+			<field max="99999" min="0" name="warehouse" nullable="false" type="int">
+				<db-column name="WAREHOUSE" type="NUMBER(10)"/>
+			</field>
+			<field max="99999" min="0" name="shipping" nullable="false" type="int">
+				<db-column name="SHIPPING" type="NUMBER(10)"/>
+			</field>
+		</fields>
+	</bo>
+	<bo name="OrderTerm" plural="OrderTerms">
+		<sub-package>order</sub-package>
+		<db-table name="ORDER_TERM" sequence="SEQ_ORDER_TERM"/>
+		<fields>
+			<field name="plannedDate" nullable="false" type="Date">
+				<db-column name="PLANNED_DATE" type="DATE"/>
+			</field>
+			<field max="99999" min="0" name="plannedQuantity" nullable="false" type="int">
+				<db-column name="PLANNED_QUANTITY" type="NUMBER(5)"/>
+			</field>
+			<field max="99999" min="0" name="shippedQuantity" nullable="false" type="int">
+				<db-column name="SHIPPED_QUANTITY" type="NUMBER(5)"/>
+			</field>
+			<field max="99999" min="0" name="orderLinePlannedQuantity" nullable="false" type="int">
+				<db-column name="ORDER_LINE_PLANNED_QUANTITY" type="NUMBER(5)"/>
+			</field>
+			<field name="orderLinePlannedDate" nullable="false" type="Date">
+				<db-column name="ORDER_LINE_PLANNED_DATE" type="DATE"/>
+			</field>
+			<field name="productsOrder" nullable="false" searchable="true" type="BoKey" class="ProductsOrder">
+				<db-column name="PRODUCTS_ORDER_UID" type="NUMBER(18)" />
+			</field>		
+			<field name="coloredModel" nullable="false" searchable="true" type="BoKey" class="ColoredModel">
+				<db-column name="COLORED_MODEL_UID" type="NUMBER(18)" />
+			</field>
+			<field name="orderLineType" nullable="false" searchable="true" type="BoKey" class="OrderLineType">
+				<db-column name="ORDER_LINE_TYPE_UID" type="NUMBER(18)" />
+			</field>	
+		</fields>
+	</bo>
+	<bo name="Collection" plural="Collections">
+		<sub-package>collection</sub-package>
+		<db-table name="COLLECTION" sequence="SEQ_COLLECTION"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String" default="default">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field name="season" nullable="false" searchable="true" type="BoKey" class="Season">
+				<db-column name="SEASON_UID" type="NUMBER(18)" />
+			</field>
+			<field name="modelCollections" nullable="false" type="BosRelation" class="ModelCollection">
+				<db-table name="MODEL_COLLECTION" foreign-key="COLLECTION_UID"/>
+			</field>	
+		</fields>	
+	</bo>
+	<bo name="Season" plural="Seasons">
+		<sub-package>season</sub-package>
+		<db-table name="SEASON" sequence="SEQ_SEASON"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field max="99999" min="0" name="year" nullable="false" type="int">
+				<db-column name="YEAR" type="NUMBER(10)"/>
+			</field>
+			<field name="collections" nullable="false" type="BosRelation" class="Collection">
+				<db-table name="COLLECTION" foreign-key="SEASON_UID"/>
+			</field>		
+		</fields>
+	</bo>
+	<bo name="ModelCollection" plural="ModelCollections">
+		<sub-package>model</sub-package>
+		<db-table name="MODEL_COLLECTION" sequence="SEQ_MODEL_COLLECTION"/>
+		<fields>
+			<field name="model" nullable="false" searchable="true" type="BoKey" class="Model">
+				<db-column name="MODEL_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="collection" nullable="false" searchable="true" type="BoKey" class="Collection">
+				<db-column name="COLLECTION_UID" type="NUMBER(18)" />
+			</field>	
+		</fields>
+	</bo>
+	<bo name="Model" plural="Models">
+		<sub-package>model</sub-package>
+		<db-table name="MODEL" sequence="SEQ_MODEL"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field max="30" min="0" name="modelCode" nullable="false" type="String">
+				<db-column name="MODEL_CODE" type="VARCHAR(30)"/>
+			</field>		
+			<field name="sex" nullable="false" searchable="true" type="BoKey" class="Sex">
+				<db-column name="SEX_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="shape" nullable="false" searchable="true" type="BoKey" class="Shape">
+				<db-column name="SHAPE_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="estheticLine" nullable="false" searchable="true" type="BoKey" class="EstheticLine">
+				<db-column name="ESTHETIC_LINE_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="modelCollections" nullable="false" type="BosRelation" class="ModelCollection">
+				<db-table name="MODEL_COLLECTION" foreign-key="MODEL_UID"/>
+			</field>		
+			<field name="coloredModels" nullable="false" type="BosRelation" class="ColoredModel">
+				<db-table name="COLORED_MODEL" foreign-key="MODEL_UID"/>
+			</field>		
+		</fields>
+	</bo>
+	<bo name="Sex" plural="Sexes">
+		<sub-package>sex</sub-package>
+		<db-table name="SEX" sequence="SEQ_SEX"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field max="30" min="0" name="code" nullable="false" type="String">
+				<db-column name="CODE" type="VARCHAR(30)"/>
+			</field>
+		</fields>
+	</bo>	
+	<bo name="Shape" plural="Shapes">
+		<sub-package>shape</sub-package>
+		<db-table name="SHAPE" sequence="SEQ_SHAPE"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+		</fields>
+	</bo>	
+	<bo name="EstheticLine" plural="EstheticLines">
+		<sub-package>estheticline</sub-package>
+		<db-table name="ESTHETIC_LINE" sequence="SEQ_ESTHETIC_LINE"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+		</fields>
+	</bo>	
+	<bo name="Size" plural="Sizes">
+		<sub-package>size</sub-package>
+		<db-table name="PRODUCT_SIZE" sequence="SEQ_PRODUCT_SIZE"/>
+		<fields>
+			<field max="30" min="0" name="size" nullable="false" type="String">
+				<db-column name="PRODUCT_SIZE" type="VARCHAR(30)"/>
+			</field>
+			<field name="sex" nullable="false" searchable="true" type="BoKey" class="Sex">
+				<db-column name="SEX_UID" type="NUMBER(18)" />
+			</field>
+			<field defaultSort="defaultSort" max="9999" min="0" name="sortKey" nullable="true" type="Integer">
+				<db-column name="SORT_KEY" type="NUMBER(10)"/>
+			</field>	
+		</fields>
+	</bo>
+	<bo name="Color" plural="Colors">
+		<sub-package>color</sub-package>
+		<db-table name="COLOR" sequence="SEQ_COLOR"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field max="30" min="0" name="code" nullable="false" type="String">
+				<db-column name="COLOR_CODE" type="VARCHAR(30)"/>
+			</field>
+		</fields>
+	</bo>		
+	<bo name="ColoredModel" plural="ColoredModels">
+		<sub-package>model</sub-package>
+		<db-table name="COLORED_MODEL" sequence="SEQ_COLORED_MODEL"/>
+		<fields>
+			<field name="model" nullable="false" searchable="true" type="BoKey" class="Model">
+				<db-column name="MODEL_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="color" nullable="false" searchable="true" type="BoKey" class="Color">
+				<db-column name="COLOR_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="product" nullable="false" type="BosRelation" class="Product">
+				<db-table name="PRODUCT" foreign-key="COLORED_MODEL_UID"/>
+			</field>		
+		</fields>
+	</bo>
+	<bo name="OrderLineType" plural="OrderLineTypes">
+		<sub-package>order.type</sub-package>
+		<db-table name="ORDER_LINE_TYPE" sequence="SEQ_ORDER_LINE_TYPE"/>
+		<fields>
+			<field max="30" min="0" name="name" nullable="false" type="String">
+				<db-column name="NAME" type="VARCHAR(30)"/>
+			</field>
+			<field max="30" min="0" name="code" nullable="false" type="String">
+				<db-column name="ORDER_LINE_TYPE_CODE" type="VARCHAR(30)"/>
+			</field>
+			<field defaultSort="defaultSort" max="99999" min="0" name="sortKey" nullable="true" type="Integer">
+				<db-column name="SORT_KEY" type="NUMBER(10)"/>
+			</field>
+		</fields>
+	</bo>	
+	<bo name="ManufacturedColoredModel" plural="ManufacturedColoredModels">
+		<sub-package>businessunit</sub-package>
+		<db-table name="MANUFACTURED_COLORED_MODEL" sequence="SEQ_MANUFACTURED_COLORED_MODEL"/>
+		<fields>
+			<field name="init" nullable="false" type="int">
+				<db-column name="INIT" type="NUMBER(10)"/>
+			</field>
+			<field name="cuttingB" nullable="false" type="int">
+				<db-column name="CUTTING_B" type="NUMBER(10)"/>
+			</field>
+			<field name="cuttingE" nullable="false" type="int">
+				<db-column name="CUTTING_E" type="NUMBER(10)"/>
+			</field>
+			<field name="bindingB" nullable="false" type="int">
+				<db-column name="BINDING_B" type="NUMBER(10)"/>
+			</field>
+			<field name="bindingE" nullable="false" type="int">
+				<db-column name="BINDING_E" type="NUMBER(10)"/>
+			</field>
+			<field name="lasting" nullable="false" type="int">
+				<db-column name="LASTING" type="NUMBER(10)"/>
+			</field>
+			<field name="warehouse" nullable="false" type="int">
+				<db-column name="WAREHOUSE" type="NUMBER(10)"/>
+			</field>
+			<field name="shipping" nullable="false" type="int">
+				<db-column name="SHIPPING" type="NUMBER(10)"/>
+			</field>
+			<field name="coloredModel" nullable="false" searchable="true" type="BoKey" class="ColoredModel">
+				<db-column name="COLORED_MODEL_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)"/>
+			</field>		
+		</fields>
+	</bo>
+	<bo name="BusinessUnitActivity" plural="BusinessUnitActivities">
+		<sub-package>businessunit</sub-package>
+		<db-table name="BUSINESS_UNIT" sequence="SEQ_BUSINESS_UNIT" />
+		<fields>
+			<field name="activity" nullable="false" searchable="true" type="BoKey" class="Activity">
+				<db-column name="ACTIVITY_UID" type="NUMBER(18)" />
+			</field>	
+			<field name="businessUnit" nullable="false" searchable="true" type="BoKey" class="BusinessUnit">
+				<db-column name="BUSINESS_UNIT_UID" type="NUMBER(18)" />
+			</field>	
+		</fields>
+	</bo>
+</bos>

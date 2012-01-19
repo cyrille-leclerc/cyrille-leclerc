@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="org.hsqldb.jdbcDriver" />
+		<property name="url" value="jdbc:hsqldb:mem:baseball" />
+		<property name="username" value="sa" />
+		<property name="password" value="" />
+		<property name="maxActive" value="1" />
+	</bean>
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mappingResources">
+			<list>
+				<value>cyrille/sample/person/Person.hbm.xml</value>
+			</list>
+		</property>
+		<property name="schemaUpdate" value="true" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.HSQLDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.use_sql_comments">true</prop>
+				<!-- 
+					<prop key="hibernate.cglib.use_reflection_optimizer">
+					false
+					</prop>
+				-->
+				<prop key="hibernate.generate_statistics">true</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="transactionManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<bean id="personDao" class="cyrille.springframework.hibernate3.PersonDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<bean id="accountDao" class="cyrille.springframework.hibernate3.AccountDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<bean id="PersonController" class="cyrille.springframework.beans.PersonControllerImpl.java">
+		<constructor-arg>
+			<ref bean="accountDao" />
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="personDao" />
+		</constructor-arg>
+	</bean>
+
+</beans>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:impl="http://cyrille/xml/jaxb"
+	elementFormDefault="qualified" targetNamespace="http://cyrille/xml/jaxb">
+	
+	<xs:element name="students">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="impl:student" minOccurs="0" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="student" type="impl:studentType">
+	</xs:element>
+	
+	<xs:complexType name="studentType">
+		<xs:all>
+			<xs:element name="uid" type="xs:long" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="lastName" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="firstName" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="lastModificationDate" type="xs:dateTime" minOccurs="1" maxOccurs="1" />
+		</xs:all>
+	</xs:complexType>
+
+</xs:schema>

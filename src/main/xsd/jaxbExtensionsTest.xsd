@@ -1,0 +1,930 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema elementFormDefault="qualified" jaxb:version="1.0"
+	targetNamespace="http://cyrille/xml/jaxb/extension"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+	xmlns="http://cyrille/xml/jaxb/extension" xmlns:impl="http://cyrille/xml/jaxb/extension">
+	<xs:annotation>
+		<xs:appinfo>
+			<jaxb:globalBindings generateIsSetMethod="true">
+				<!--
+					<jaxb:javaType name="java.lang.Integer" xmltype="xs:int" parseMethod="new" printMethod="toString" />
+				-->
+			</jaxb:globalBindings>
+		</xs:appinfo>
+	</xs:annotation>
+
+
+	<xs:element name="cells">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="cell" type="impl:cell" minOccurs="0"
+					maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="template">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="server" type="impl:server" minOccurs="0"
+					maxOccurs="1" />
+				<xs:element name="dataSource" type="impl:dataSource"
+					minOccurs="0" maxOccurs="1" />
+				<xs:element name="was40DataSource"
+					type="impl:was40DataSource" minOccurs="0" maxOccurs="1" />
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="application">
+		<xs:sequence>
+			<xs:element name="applicationConfig"
+				type="impl:applicationConfig" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						I don't understand why, sometimes, there are
+						several applicationConfig elements. As this
+						element is rarely used to control configuration,
+						support maxOccurs="unbounded" instead of
+						understanding the details of this WsAdmin area.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="virtualHost" type="impl:virtualHost"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="webModuleDeployment"
+				type="impl:webModuleDeployment" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="applicationConfig">
+		<xs:all>
+			<xs:element name="sessionManager" type="impl:sessionManager"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="webModuleDeployment">
+		<xs:all>
+			<xs:element name="altDD" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="classloaderMode" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="deploymentId" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="startingWeight" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="uri" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="webModuleConfig" type="impl:webModuleConfig"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="webModuleConfig">
+		<xs:all>
+			<xs:element name="name" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="sessionManager" type="impl:sessionManager"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="lsdConnection">
+		<xs:all>
+			<xs:element name="endPoint" type="impl:endPoint" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="mode" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="nameServer">
+		<xs:all>
+			<xs:element name="BOOTSTRAP_ADDRESS" type="impl:endPoint"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="bootstrapServerAddress" type="impl:endPoint"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="cell">
+		<xs:all>
+			<xs:element name="nodes" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="node" type="impl:node"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="clusters" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="cluster" type="impl:cluster"
+							maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="virtualHosts" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="virtualHost"
+							type="impl:virtualHost" minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="dataSources" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="dataSource" type="impl:dataSource"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+		<xs:attribute name="name" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="cluster">
+		<xs:sequence>
+			<xs:element name="member" type="impl:member" minOccurs="0"
+				maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="member">
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="weight" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="connectionPool">
+		<xs:all>
+			<xs:element name="agedTimeout" type="xs:int" />
+			<xs:element name="connectionTimeout" type="xs:int" />
+			<xs:element name="maxConnections" type="xs:int" />
+			<xs:element name="minConnections" type="xs:int" />
+			<xs:element name="purgePolicy" type="xs:string" />
+			<!-- EntirePool, FailingConnectionOnly-->
+			<xs:element name="reapTime" type="xs:int" />
+			<xs:element name="unusedTimeout" type="xs:int" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="was40ConnectionPool">
+		<xs:all>
+			<xs:element name="connectionTimeout" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="maximumPoolSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="minimumPoolSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="disableAutoConnectionCleanup"
+				minOccurs="0" maxOccurs="1" type="xs:string" />
+			<xs:element name="idleTimeout" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="orphanTimeout" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="statementCacheSize" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="dataSource">
+		<xs:all>
+
+			<xs:element name="provider" type="impl:provider" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="connectionPool" type="impl:connectionPool"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="propertySet"
+				type="impl:j2eeResourcePropertySet" minOccurs="0" maxOccurs="1" />
+			<xs:element name="statementCacheSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="datasourceHelperClassname" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+		</xs:all>
+		<xs:attribute name="name" type="xs:string" use="optional" />
+		<xs:attribute name="jndiName" type="xs:string" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+
+	<xs:complexType name="traceLog">
+		<xs:all>
+			<xs:element name="fileName" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="maxNumberOfBackupFiles" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="rolloverSize" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="traceService">
+		<xs:all>
+			<xs:element name="enable" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="memoryBufferSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="startupTraceSpecification" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="traceFormat" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<!-- ENUM(LOG_ANALYZER, BASIC, ADVANCED) -->
+			<xs:element name="traceOutputType" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<!--  ENUM(SPECIFIED_FILE, MEMORY_BUFFER) -->
+			<xs:element name="traceLog" type="impl:traceLog" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="properties" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="pmiService">
+		<xs:all>
+			<xs:element name="enable" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="initialSpecLevel" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="properties" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="was40DataSource">
+		<xs:all>
+			<xs:element name="provider" type="impl:provider" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="was40ConnectionPool"
+				type="impl:was40ConnectionPool" minOccurs="0" maxOccurs="1" />
+			<xs:element name="propertySet"
+				type="impl:j2eeResourcePropertySet" minOccurs="0" maxOccurs="1" />
+			<xs:element name="databaseName" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="defaultPassword" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="defaultUser" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="description" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="category" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+		</xs:all>
+		<xs:attribute name="name" type="xs:string" use="optional" />
+		<xs:attribute name="jndiName" type="xs:string" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="endPoint">
+		<!-- TODO remove name attribute -->
+		<xs:attribute name="name" type="xs:string" use="optional" />
+		<xs:attribute name="host" type="xs:string" use="optional" />
+		<xs:attribute name="port" type="xs:int" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="httpTransport">
+		<xs:all>
+			<xs:element name="properties" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+		<xs:attribute name="port" type="xs:int" use="required" />
+		<xs:attribute name="host" type="xs:string" use="required" />
+		<xs:attribute name="sslEnabled" type="xs:boolean"
+			use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+
+	<xs:complexType name="node">
+		<xs:all>
+			<xs:element name="dataSources" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="dataSource" type="impl:dataSource"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="was40DataSources" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="was40DataSource"
+							type="impl:was40DataSource" minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="servers" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="server" type="impl:server"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="variableSubstitutionEntries" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="variableSubstitutionEntry"
+							type="impl:variableSubstitutionEntry" minOccurs="0"
+							maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="provider">
+		<xs:all>
+
+			<xs:element name="classpath" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+
+			<xs:element name="xa" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+
+		</xs:all>
+		<xs:attribute name="name" type="xs:string" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="server">
+
+		<xs:all>
+			<xs:element name="serverEntry" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:attribute name="id" type="xs:string"
+						use="required" />
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="clusterName" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+
+			<xs:element name="errorStreamRedirect" type="impl:streamRedirect"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="outputStreamRedirect"
+				type="impl:streamRedirect" minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="applications" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="application"
+							type="impl:application" minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="dataSources" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="dataSource" type="impl:dataSource"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="was40DataSources" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="was40DataSource"
+							type="impl:was40DataSource" minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="nameServer" type="impl:nameServer"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="webContainer" type="impl:webContainer"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="ejbContainer" type="impl:ejbContainer"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="nodeAgent" type="impl:nodeAgent" minOccurs="0"
+				maxOccurs="1" />
+
+			<xs:element name="endPoints" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="endPoint" type="impl:endPoint"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="orbService" type="impl:orbService"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="javaVirtualMachine"
+				type="impl:javaVirtualMachine" minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="processDefinition" type="impl:processDef"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="traceService" type="impl:traceService"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="pmiService" type="impl:pmiService"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="variableSubstitutionEntries" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="variableSubstitutionEntry"
+							type="impl:variableSubstitutionEntry" minOccurs="0"
+							maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="properties">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+					<xs:attribute name="id" type="xs:string"
+						use="optional" />
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+
+		<xs:attribute name="name" type="xs:string" use="optional" />
+		<xs:attribute name="runningStatus" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="NOT STARTED" />
+					<xs:enumeration value="STARTED" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="type" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="APPLICATION_SERVER" />
+					<xs:enumeration value="DEPLOYMENT_MANAGER" />
+					<xs:enumeration value="NODE_AGENT" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="pid" type="xs:int" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="optional" />
+
+	</xs:complexType>
+
+	<xs:complexType name="ejbContainer">
+		<xs:all>
+			<xs:element name="inactivePoolCleanupInterval" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="ejbCache" type="impl:ejbCache" minOccurs="0"
+				maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="ejbCache">
+		<xs:all>
+			<xs:element name="cacheSize" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+			<xs:element name="cleanupInterval" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="orbService">
+		<xs:all>
+
+			<xs:element name="commTraceEnabled" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+
+			<xs:element name="connectionCacheMaximum" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="connectionCacheMinimum" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="enable" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+
+			<xs:element name="forceTunnel" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+
+			<xs:element name="locateRequestTimeout" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="noLocalCopies" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+
+			<xs:element name="requestRetriesCount" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="requestRetriesDelay" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="requestTimeout" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+
+			<xs:element name="tunnelAgentURL" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+
+			<xs:element name="threadPool" type="impl:threadPool"
+				minOccurs="0" maxOccurs="1" />
+
+			<xs:element name="properties">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="ORB_LISTENER_ADDRESS" type="impl:endPoint"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="lsdConnection" type="impl:lsdConnection"
+				minOccurs="0" maxOccurs="1" />
+
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="threadPool">
+		<xs:attribute name="inactivityTimeout" type="xs:int"
+			use="required" />
+		<xs:attribute name="isGrowable" type="xs:boolean"
+			use="required" />
+		<xs:attribute name="minimumSize" type="xs:int" use="required" />
+		<xs:attribute name="maximumSize" type="xs:int" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="property">
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="value" type="xs:string" use="optional" />
+		<xs:attribute name="description" type="xs:string"
+			use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="j2eeResourcePropertySet">
+		<xs:sequence>
+			<xs:element name="resourceProperties"
+				type="impl:j2eeResourceProperty" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="j2eeResourceProperty">
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<xs:attribute name="value" type="xs:string" use="optional" />
+		<xs:attribute name="type" type="xs:string" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="virtualHost">
+		<xs:all>
+			<xs:element name="aliases" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="alias" type="impl:alias"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:all>
+
+		<xs:attribute name="name" type="xs:string" use="required" />
+		<!-- id is optional because virtualHost can be deduced from applicationDeployement without knowing VirtualHost.id -->
+		<xs:attribute name="id" type="xs:string" use="optional" />
+	</xs:complexType>
+
+	<xs:complexType name="alias">
+		<xs:attribute name="port" type="xs:string" use="required" />
+		<xs:attribute name="host" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+
+	<xs:complexType name="processDef">
+		<xs:all>
+
+			<xs:element name="environment" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+
+			<xs:element name="executableArguments" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="executableArgument"
+							minOccurs="0" maxOccurs="unbounded" type="xs:string" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+
+			<xs:element name="executableName" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="execution" type="impl:processExecution"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="ioRedirect" type="impl:outputRedirect"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="workingDirectory" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+		</xs:all>
+
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="streamRedirect">
+		<xs:all>
+			<xs:element name="baseHour" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+			<xs:element name="fileName" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="formatWrites" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="maxNumberOfBackupFiles" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="messageFormatKind" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<!-- ENUM(BASIC, ADVANCED) -->
+			<xs:element name="rolloverPeriod" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="rolloverSize" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+			<xs:element name="rolloverType" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<!-- ENUM(TIME, SIZE, NONE, BOTH) -->
+			<xs:element name="suppressStackTrace" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="suppressWrites" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="processExecution">
+		<xs:attribute name="processPriority" type="xs:int"
+			use="required" />
+		<xs:attribute name="runAsGroup" type="xs:string" use="required" />
+		<xs:attribute name="runAsUser" type="xs:string" use="required" />
+		<xs:attribute name="runInProcessGroup" type="xs:string"
+			use="required" />
+		<xs:attribute name="umask" type="xs:string" use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="outputRedirect">
+		<xs:attribute name="stderrFilename" type="xs:string"
+			use="required" />
+		<xs:attribute name="stdoutFilename" type="xs:string"
+			use="required" />
+		<xs:attribute name="stdinFilename" type="xs:string"
+			use="required" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="cookie">
+		<xs:all>
+			<xs:element name="domain" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="maximumAge" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="name" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="path" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="secure" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="sessionManager">
+		<xs:all>
+			<xs:element name="accessSessionOnTimeout" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="allowSerializedSessionAccess"
+				minOccurs="0" maxOccurs="1" type="xs:boolean" />
+			<!--  -->
+			<xs:element name="cookie" type="impl:cookie" minOccurs="0"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						Should be "defaultCookieSettings" but we call it
+						"cookie" to ease the jython script
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="enable" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="enableCookies" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="enableProtocolSwitchRewriting"
+				minOccurs="0" maxOccurs="1" type="xs:boolean" />
+			<xs:element name="enableSSLTracking" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="enableSecurityIntegration" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="enableUrlRewriting" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="maxWaitTime" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+			<xs:element name="sessionPersistenceMode" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<!-- DATABASE, DATA_REPLICATION, NONE -->
+			<xs:element name="tuningParams" type="impl:tuningParams"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="tuningParams">
+		<xs:all>
+			<xs:element name="allowOverflow" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<!-- type InvalidationSchedule -->
+			<xs:element name="invalidationSchedule" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="invalidationTimeout" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="maxInMemorySessionCount" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="scheduleInvalidation" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="usingMultiRowSchema" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="writeContents" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<!-- 	Should be an enumeration of ALL_SESSION_ATTRIBUTES, ONLY_UPDATED_ATTRIBUTES -->
+			<xs:element name="writeFrequency" minOccurs="0"
+				maxOccurs="1" />
+			<!-- 	Should be an enumeration of TIME_BASED_WRITE, END_OF_SERVLET_SERVICE, MANUAL_UPDATE -->
+			<xs:element name="writeInterval" minOccurs="0" maxOccurs="1"
+				type="xs:int" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="webContainer">
+		<xs:all>
+			<xs:element name="httpTransports" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="httpTransport"
+							type="impl:httpTransport" minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="sessionManager" type="impl:sessionManager"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="threadPool" type="impl:threadPool"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="nodeAgent">
+		<xs:all>
+			<xs:element name="name" type="xs:string" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="configSynchronizationService"
+				type="impl:configSynchronizationService" minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="configSynchronizationService">
+		<xs:all>
+			<xs:element name="autoSynchEnabled" type="xs:boolean"
+				minOccurs="0" maxOccurs="1" />
+			<xs:element name="enable" type="xs:boolean" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="exclusions" type="xs:string" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="synchInterval" type="xs:int" minOccurs="0"
+				maxOccurs="1" />
+			<xs:element name="synchOnServerStartup" type="xs:boolean"
+				minOccurs="0" maxOccurs="1" />
+		</xs:all>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="variableSubstitutionEntry">
+		<xs:attribute name="symbolicName" type="xs:string"
+			use="required" />
+		<xs:attribute name="value" type="xs:string" use="optional" />
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+	<xs:complexType name="javaVirtualMachine">
+		<!-- 
+			due to bootClasspath and classpath elements with 
+			maxOccurs="unbounded", we use xs:sequence instead of xs:all
+		-->
+		<xs:sequence>
+			<!-- TODO enhance bootClasspath and classpath -->
+			<xs:element name="bootClasspath" minOccurs="0"
+				maxOccurs="unbounded" type="xs:string" />
+			<xs:element name="classpath" minOccurs="0"
+				maxOccurs="unbounded" type="xs:string" />
+			<xs:element name="debugArgs" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="debugMode" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="disableJIT" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="executableJarFileName" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="genericJvmArguments" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="hprofArguments" minOccurs="0"
+				maxOccurs="1" type="xs:string" />
+			<xs:element name="initialHeapSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="maximumHeapSize" minOccurs="0"
+				maxOccurs="1" type="xs:int" />
+			<xs:element name="osName" minOccurs="0" maxOccurs="1"
+				type="xs:string" />
+			<xs:element name="runHProf" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" />
+			<xs:element name="systemProperties" minOccurs="0"
+				maxOccurs="1">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="property" type="impl:property"
+							minOccurs="0" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="verboseModeClass" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+			<xs:element name="verboseModeGarbageCollection"
+				minOccurs="0" maxOccurs="1" type="xs:boolean" />
+			<xs:element name="verboseModeJNI" minOccurs="0"
+				maxOccurs="1" type="xs:boolean" />
+		</xs:sequence>
+		<xs:attribute name="id" type="xs:string" use="required" />
+	</xs:complexType>
+
+</xs:schema>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<bean id="color-red" class="cyrille.sample.product.Color">
+		<constructor-arg type="java.lang.String">
+			<value>Red</value>
+		</constructor-arg>
+		<constructor-arg type="java.lang.String">
+			<value>The Red Color</value>
+		</constructor-arg>
+	</bean>
+	<bean id="sex-male" class="cyrille.sample.product.Sex">
+		<constructor-arg type="java.lang.String">
+			<value>Male</value>
+		</constructor-arg>
+	</bean>
+	<bean id="size-9Male" class="cyrille.sample.product.Size">
+		<constructor-arg type="java.lang.String">
+			<value>9</value>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="sex-male" />
+		</constructor-arg>
+	</bean>
+
+	<bean id="myProduct" class="cyrille.sample.product.Product">
+		<constructor-arg type="java.lang.String">
+			<value>myProduct</value>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="color-red" />
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="size-9Male" />
+		</constructor-arg>
+	</bean>
+
+</beans>

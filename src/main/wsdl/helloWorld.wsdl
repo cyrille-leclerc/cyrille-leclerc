@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://cyrille/ws/sample"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="helloWorld"
+	targetNamespace="http://cyrille/ws/sample">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://cyrille/ws/sample">
+			<xsd:element name="sayHelloResponse" type="xsd:string" />
+			<xsd:element name="sayHelloRequest" type="xsd:string" />
+			<xsd:element name="sayGoodByeResponse" type="xsd:string" />
+			<xsd:element name="sayGoodByeRequest" type="xsd:string" />
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="sayHelloResponse">
+		<wsdl:part element="tns:sayHelloResponse" name="sayHelloResponse" />
+	</wsdl:message>
+	<wsdl:message name="sayHelloRequest">
+		<wsdl:part element="tns:sayHelloRequest" name="sayHelloRequest" />
+	</wsdl:message>
+	<wsdl:message name="sayGoodByeResponse">
+		<wsdl:part element="tns:sayGoodByeResponse" name="sayGoodByeResponse" />
+	</wsdl:message>
+	<wsdl:message name="sayGoodByeRequest">
+		<wsdl:part element="tns:sayGoodByeRequest" name="sayGoodByeRequest" />
+	</wsdl:message>
+	<wsdl:portType name="helloWorld">
+		<wsdl:operation name="sayHello">
+			<wsdl:input message="tns:sayHelloRequest" />
+			<wsdl:output message="tns:sayHelloResponse" />
+		</wsdl:operation>
+		<wsdl:operation name="sayGoodBye">
+			<wsdl:input message="tns:sayGoodByeRequest" />
+			<wsdl:output message="tns:sayGoodByeResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:portType name="anotherPortType">
+		<wsdl:operation name="sayHello">
+			<wsdl:input message="tns:sayHelloRequest" />
+			<wsdl:output message="tns:sayHelloResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="helloWorldBinding" type="tns:helloWorld">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="sayHello">
+			<soap:operation soapAction="http://cyrille/ws/sample/sayHello" />
+			<wsdl:input>
+				<soap:body parts="sayHelloRequest" use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body parts="sayHelloResponse" use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+		<wsdl:operation name="sayGoodBye">
+			<soap:operation soapAction="http://cyrille/ws/sample/sayHello" />
+			<wsdl:input>
+				<soap:body parts="sayGoodByeRequest" use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body parts="sayGoodByeResponse" use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:binding name="anotherBinding" type="tns:anotherPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="sayHello">
+			<soap:operation soapAction="http://cyrille/ws/sample/sayHello" />
+			<wsdl:input>
+				<soap:body parts="sayHelloRequest" use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body parts="sayHelloResponse" use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="helloWorldService">
+		<wsdl:port binding="tns:helloWorldBinding" name="helloWorldBinding">
+			<soap:address location="http://www.example.org/helloworldBinding" />
+		</wsdl:port>
+	</wsdl:service>
+	<wsdl:service name="anotherService">
+		<wsdl:port binding="tns:anotherBinding" name="anotherBinding">
+			<soap:address location="http://www.example.org/anotherbinding" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

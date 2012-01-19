@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<bean id="java5AnnotedJmxTestServiceImpl"
+		class="cyrille.springframework.jmx.Java5AnnotedJmxTestServiceImpl" />
+	<bean id="javadocAnnotedJmxTestServiceImpl"
+		class="cyrille.springframework.jmx.JavadocAnnotedJmxTestServiceImpl" />
+
+	<bean id="mbeanServer"
+		class="org.springframework.jmx.support.MBeanServerFactoryBean" />
+
+
+	<bean id="serverConnector"
+		class="org.springframework.jmx.support.ConnectorServerFactoryBean">
+		<property name="objectName" value="system:name=rmiconnector" />
+		<property name="server" ref="mbeanServer" />
+		<property name="serviceUrl"
+			value="service:jmx:rmi://localhost/jndi/rmi://localhost:1099/server" />
+		<property name="environment">
+			<props>
+				<prop key="jmx.remote.jndi.rebind">true</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="registry"
+		class="org.springframework.remoting.rmi.RmiRegistryFactoryBean">
+		<property name="port" value="1099" />
+	</bean>
+
+	<bean id="namingStrategy"
+		class="cyrille.springframework.jmx.EnrichedKeyNamingStrategy" />
+
+
+	<bean id="exporter"
+		class="org.springframework.jmx.export.MBeanExporter">
+		<property name="autodetect" value="true" />
+		<property name="server" ref="mbeanServer" />
+		<property name="namingStrategy" ref="namingStrategy" />
+		<property name="beans">
+			<map>
+				<entry key="system:name=java5AnnotedJmxTestServiceImpl"
+					value-ref="java5AnnotedJmxTestServiceImpl" />
+				<entry
+					key="system:name=javadocAnnotedJmxTestServiceImpl"
+					value-ref="javadocAnnotedJmxTestServiceImpl" />
+			</map>
+		</property>
+	</bean>
+	<!-- 
+		<bean id="htmlAdapter" class="com.sun.jdmk.comm.HtmlAdaptorServer"
+		init-method="start">
+		<property name="port" value="9292" />
+		</bean>
+	-->
+</beans>
